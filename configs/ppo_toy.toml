@@ -1,0 +1,38 @@
+algorithm = "ppo"
+
+[env]
+kind = "toy"
+[env.kwargs]
+max_steps = 60
+shaping_scale = 0.1
+
+[base]
+kind = "mock"
+
+[chunk]
+horizon = 10
+execute_steps = 5
+gamma = 0.99
+residual_scale = 0.2
+
+[train]
+seed = 0
+device = "cpu"
+torch_threads = 1
+total_decisions = 2048
+batch_size = 64
+rollout_steps = 256
+log_every = 256
+save_every = 1024
+
+[ppo]
+hidden_dim = 128
+actor_lr = 0.0001
+critic_lr = 0.0003
+epochs = 4
+clip_range = 0.2
+gae_lambda = 0.95
+target_kl = 0.02
+entropy_coef = 0.0
+max_grad_norm = 0.5
+

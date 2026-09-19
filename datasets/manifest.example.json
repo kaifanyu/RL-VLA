@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "dataset_id": "TO_BE_SELECTED",
+  "format": "TO_BE_SELECTED",
+  "format_version": null,
+  "raw_path": "datasets/raw",
+  "processed_path": "datasets/processed",
+  "robot": null,
+  "task_instructions": [],
+  "controller": null,
+  "control_hz": null,
+  "action_names": [],
+  "action_units": [],
+  "action_frame": null,
+  "camera_names": [],
+  "state_names": [],
+  "splits": {"train_episode_ids": [], "validation_episode_ids": [], "test_episode_ids": []},
+  "base_checkpoint": null,
+  "base_config": null,
+  "notes": "Metadata template only. No dataset is loaded by the baseline."
+}
+

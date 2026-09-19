@@ -1,0 +1,37 @@
+algorithm = "sac"
+
+[env]
+kind = "toy"
+[env.kwargs]
+max_steps = 60
+shaping_scale = 0.1
+
+[base]
+kind = "mock"
+
+[chunk]
+horizon = 10
+execute_steps = 5
+gamma = 0.99
+residual_scale = 0.2
+
+[train]
+seed = 0
+device = "cpu"
+torch_threads = 1
+total_decisions = 2000
+batch_size = 64
+learning_starts = 64
+replay_capacity = 10000
+updates_per_decision = 1
+log_every = 100
+save_every = 1000
+
+[sac]
+hidden_dim = 128
+actor_lr = 0.0001
+critic_lr = 0.0003
+alpha_lr = 0.0003
+initial_alpha = 0.1
+tau = 0.005
+

@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+tmp/
+third_party/openpi/
+checkpoints/openpi/**
+datasets/raw/**
+datasets/processed/**
+!datasets/raw/.gitkeep
+!datasets/processed/.gitkeep
+!checkpoints/openpi/pi05_libero/
+!checkpoints/openpi/pi05_libero/.gitkeep
+runs/**
+!runs/README.md

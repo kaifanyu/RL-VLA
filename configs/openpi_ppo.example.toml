@@ -1,0 +1,43 @@
+# Integration template: same environment, checkpoint and residual interface as SAC.
+algorithm = "ppo"
+
+[env]
+kind = "external"
+factory = "your_task.adapter:make_env"
+[env.kwargs]
+
+[base]
+kind = "openpi"
+host = "localhost"
+port = 8000
+# Declared provenance; the standard server does not verify these fields.
+checkpoint_id = "gs://openpi-assets/checkpoints/pi05_libero"
+model_config = "pi05_libero"
+source_commit = "215abfb217dbac7d5f1273282331b9b1866c0479"
+
+[chunk]
+horizon = 10
+execute_steps = 5
+gamma = 0.99
+residual_scale = [0.05, 0.05, 0.05, 0.025, 0.025, 0.025, 0.0]
+
+[train]
+seed = 0
+device = "cpu"
+torch_threads = 1
+total_decisions = 10240
+batch_size = 256
+rollout_steps = 1024
+log_every = 256
+save_every = 1024
+
+[ppo]
+hidden_dim = 256
+actor_lr = 0.0001
+critic_lr = 0.0003
+epochs = 4
+clip_range = 0.2
+gae_lambda = 0.95
+target_kl = 0.02
+entropy_coef = 0.0
+max_grad_norm = 0.5
