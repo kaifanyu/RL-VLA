@@ -1,0 +1,22 @@
+# Online LIBERO environment for Linux x86_64 / Python 3.11.
+# The learner and client retain the CPU baseline versions.
+-r requirements-cpu.in
+-c requirements-cpu.lock
+
+# LIBERO is installed separately from OpenPI's pinned submodule commit:
+# f78abd68ee283de9f9be3c8f7e2a9ad60246e95c. Its legacy training requirements
+# are deliberately not installed: online rollouts need only the imports below.
+# Keep robosuite's original controller API and the upstream MuJoCo version;
+# upgrade NumPy/Numba/SciPy to support the learner's Python 3.11 runtime.
+robosuite==1.4.1
+mujoco==3.2.3
+numba==0.61.2
+scipy==1.15.3
+opencv-python==4.11.0.86
+matplotlib==3.10.3
+bddl==1.0.1
+# BDDL imports future.utils unconditionally but omits it from package metadata.
+future==1.0.0
+gym==0.25.2
+PyYAML==6.0.2
+easydict==1.13

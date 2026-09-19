@@ -1,0 +1,35 @@
+name: rl-vla-gpu-demos
+
+services:
+  gpu-tests:
+    image: rl-vla:gpu
+    build:
+      context: .
+      target: gpu
+    platform: linux/amd64
+    init: true
+    user: "${RL_VLA_UID:-1000}:${RL_VLA_GID:-1000}"
+    working_dir: /app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    shm_size: "1gb"
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      MUJOCO_GL: osmesa
+      PYOPENGL_PLATFORM: osmesa
+      SDL_VIDEODRIVER: dummy
+      NUMBA_CACHE_DIR: /tmp/numba
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./runs:/app/runs
+      - ./checkpoints:/app/checkpoints:ro
+      - ./datasets:/app/datasets:ro
+    entrypoint: ["python", "/opt/rl-vla/run_gpu_demos.py"]
+    command: ["--help"]

@@ -1,0 +1,42 @@
+# Linux x86_64 / CPython 3.11 GPU learner, simulators, and benchmark tooling.
+# Resolve/install with --torch-backend cu126 and the explicit PyPI index.
+# This file is independent of the CPU locks so they cannot select CPU PyTorch.
+numpy==1.26.4
+torch==2.7.0+cu126
+gymnasium==1.3.0
+
+# Runtime dependencies of the source-pinned OpenPI client (not the VLA server).
+dm-tree==0.1.10
+msgpack==1.2.2
+pillow==12.3.0
+websockets==15.0.1
+# Build backends for our wheel and the source-pinned OpenPI client.
+setuptools==80.9.0
+wheel==0.45.1
+hatchling==1.27.0
+
+# LIBERO is installed separately from the pinned upstream source commit.
+# Keep these simulator versions aligned with requirements-libero.in.
+robosuite==1.4.1
+mujoco==3.2.3
+numba==0.61.2
+scipy==1.15.3
+opencv-python==4.11.0.86
+matplotlib==3.10.3
+bddl==1.0.1
+# BDDL imports future.utils unconditionally but omits it from its metadata.
+future==1.0.0
+gym==0.25.2
+PyYAML==6.0.2
+easydict==1.13
+
+# Pendulum, MuJoCo Reacher, and Panda reaching/pushing/pick-and-place demos.
+panda-gym==3.0.7
+pybullet==3.2.7
+pygame==2.6.1
+imageio==2.37.0
+imageio-ffmpeg==0.6.0
+
+# In-container verification uses the same versions as requirements-test.in.
+pytest==9.1.1
+ruff==0.16.8

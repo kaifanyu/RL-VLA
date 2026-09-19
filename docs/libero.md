@@ -2,20 +2,27 @@
 
 Use this adapter with **`pi05_libero`** when you want an existing robot task instead of writing your own environment. `configs/libero_sac.toml` and `configs/libero_ppo.toml` select LIBERO Spatial task 0. The generic `configs/openpi_*.example.toml` files remain templates for other tasks.
 
-The adapter and mock-backend tests are implemented. **The actual LIBERO simulator, renderer, task assets and GPU policy have not been installed or run here.** This does not establish robot performance or reproduce the official benchmark.
+The adapter, mock-backend tests and **real headless LIBERO reset/render/step check** have passed in the supplied Linux Docker image. The check uses Spatial task 0 and an official initial state, including both camera observations and the ten settling actions. **A real GPU policy has not been run.** This does not establish robot performance or reproduce the official benchmark.
+
+The supported deployment recipe is the [headless LIBERO container](docker.md#headless-libero-and-a-remote-policy-server), which includes pinned dependencies, task assets and noninteractive path configuration:
+
+```text
+docker compose build libero
+docker compose run --rm --entrypoint python libero /opt/rl-vla/smoke.py --libero
+```
 
 ## Simulator installation boundary
 
 Use Linux for the simulator and follow the [upstream OpenPI LIBERO setup](https://github.com/Physical-Intelligence/openpi/blob/215abfb217dbac7d5f1273282331b9b1866c0479/examples/libero/README.md) and [LIBERO installation instructions](https://github.com/Lifelong-Robot-Learning/LIBERO#installtion). The upstream Docker workflow is useful for first validating its simulator and policy example independently.
 
-There is a dependency conflict to resolve before using this in-process adapter: the upstream reference simulator recipe uses Python 3.8, Torch 1.11 and NumPy 1.22, while this learner uses Python 3.11+, Torch 2.7+ and NumPy 1.26. **Do not sync that old requirements file into the learner `.venv`.** The simulator adapter runs inside the learner process, so it requires a LIBERO/robosuite/MuJoCo installation that has been validated with the learner's Python and dependencies. A compatible simulator lock is not supplied or verified here; a separate legacy simulator environment alone does not provide that compatibility. The OpenPI policy server remains a separate process as documented in [openpi.md](openpi.md).
+The upstream reference simulator recipe uses Python 3.8, Torch 1.11 and NumPy 1.22, while this learner uses Python 3.11+, Torch 2.7+ and NumPy 1.26. **Do not sync that old requirements file into the learner `.venv`.** `docker/requirements-libero.lock` supplies a hash-pinned Linux/Python 3.11 stack validated with this in-process adapter, robosuite 1.4.1 and MuJoCo 3.2.3. The Dockerfile supplies native libraries and works around LIBERO's namespace-package installation issue. A separate legacy simulator environment alone does not provide that compatibility. The OpenPI policy server remains a separate process as documented in [openpi.md](openpi.md).
 
 The reference source/assets location is the submodule `third_party/openpi/third_party/libero`. Initialize it from the repository root when preparing the simulator:
 
 ```bash
 git -C third_party/openpi submodule update --init third_party/libero
 # After installing compatible simulator dependencies in the learner environment:
-uv pip install -e third_party/openpi/third_party/libero
+uv pip install --no-deps --config-setting editable_mode=compat -e third_party/openpi/third_party/libero
 uv pip install -e third_party/openpi/packages/openpi-client
 uv pip install 'websockets>=14,<16'
 ```

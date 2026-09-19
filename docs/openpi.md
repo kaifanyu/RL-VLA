@@ -2,6 +2,8 @@
 
 The RL actor learns bounded corrections around a frozen action chunk. Openpi runs in a separate GPU process; the lightweight RL client uses NumPy over a websocket. The included mock policy needs no model weights. No weights have been downloaded.
 
+For container deployment, use the [Docker GPU service](docker.md#optional-local-gpu-policy-service). It builds the pinned server separately from the learner, applies the required Transformers replacement, and includes startup checks and HTTP readiness. Its checkpoint must be mounted locally. The instructions below remain the manual source-environment alternative.
+
 ## 1. Install the pinned server source
 
 Use a Linux GPU machine or Ubuntu under WSL2 for the server. Upstream tests Ubuntu 22.04 and does not support native Windows. Its stated inference memory requirement is **more than 8 GB**, before adding the simulator and RL learner. WSL2 is a deployment suggestion, not an upstream-tested guarantee. See the [upstream requirements and installation](https://github.com/Physical-Intelligence/openpi/blob/215abfb217dbac7d5f1273282331b9b1866c0479/README.md#requirements).

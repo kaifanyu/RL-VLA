@@ -2,11 +2,34 @@
 
 Train **residual SAC or PPO around a frozen OpenPI policy**. OpenPI proposes an action chunk; a small PyTorch actor learns bounded corrections. Both algorithms use the same observations, action interface and reward accounting.
 
-**Ready now:** CPU toy runs, both learners, tests, evaluation, checkpoints, a pinned OpenPI source checkout and the real websocket client adapter. An optional LIBERO adapter and configs are included. **Needed for robot runs:** the matching simulator dependencies/assets and compatible checkpoint. No model weights or datasets were downloaded. The toy is a software check, not evidence of robot performance.
+**Included:** CPU toy runs, both learners, tests, evaluation, checkpoints and the real OpenPI websocket client adapter. Docker builds fetch pinned upstream sources and include the learner and a headless LIBERO simulator with pinned dependencies/assets. The `gpu` target adds CUDA learning and sequential simulation demos. A separate OpenPI GPU server image is configured. **Needed for VLA runs:** a compatible checkpoint and sufficient GPU memory. No model weights or demonstration datasets are included. The toy is a software check, not evidence of robot performance.
+
+## Run with Docker
+
+From this repository in PowerShell or Bash, with Docker running in Linux-container mode:
+
+```text
+docker compose build learner test libero
+docker compose run --rm test
+docker compose run --rm learner train --config configs/sac_toy.toml --steps 128 --output runs/docker_sac
+docker compose run --rm --entrypoint python libero /opt/rl-vla/smoke.py --libero
+```
+
+Results persist locally in `runs/`, which is ignored by Git and excluded from Docker builds. No host Python environment or `third_party/` checkout is required for these builds. See the [Docker deployment guide](docs/docker.md) for PPO, evaluation, remote OpenPI, GPU service deployment, checkpoint mounts and dependency updates. The full OpenPI server build and checkpoint inference still require validation on a suitable GPU machine; see [verification results](docs/verification.md).
+
+For an NVIDIA GPU exposed to Docker, build the CUDA demo image and run one task:
+
+```text
+docker compose -f compose.gpu-tests.yaml build gpu-tests
+docker compose -f compose.gpu-tests.yaml run --rm gpu-tests --output runs/my_gpu_demos --tasks pendulum
+docker compose -f compose.gpu-tests.yaml run --rm --entrypoint python gpu-tests /opt/rl-vla/benchmark_report.py runs/my_gpu_demos
+```
+
+The image includes CUDA PyTorch, benchmark environments, tests and report tooling; dependency installation is part of the build. Omit `--tasks pendulum` to run the full sequence. See [GPU demos](docs/gpu-demos.md) for GPU checks, task budgets and local reports. These demos train small SAC/PPO networks from numerical observations and do not run the OpenPI model.
 
 ## Run it now
 
-From this folder in PowerShell (the local `.venv` is already prepared):
+First follow [Install on another machine](#install-on-another-machine) to create the local Python environment. Then, from this folder in PowerShell:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
@@ -23,7 +46,7 @@ Each run contains `manifest.json` (configuration, versions, base metadata), `met
 
 ## Use a real OpenPI checkpoint
 
-1. Follow [OpenPI setup](docs/openpi.md). Source is in `third_party/openpi/`; place the complete checkpoint in `checkpoints/openpi/pi05_libero/` and start its separate GPU server.
+1. Follow [OpenPI setup](docs/openpi.md) to obtain the source for a local installation, or use the [Docker service](docs/docker.md#optional-local-gpu-policy-service). Place the complete checkpoint in `checkpoints/openpi/pi05_libero/` and start its separate GPU server.
 2. For the reference task, follow [LIBERO setup](docs/libero.md) and use `configs/libero_sac.toml` or `configs/libero_ppo.toml`. For your own task, implement the [environment contract](docs/environment.md) and register `env.factory = "your_task.adapter:make_env"`.
 3. For a custom task, copy `configs/openpi_sac.example.toml` or `configs/openpi_ppo.example.toml`. Set the factory, server host and physical residual bounds. The examples expect the seven LIBERO controller coordinates, with gripper corrections disabled.
 4. Evaluate the frozen base first by omitting `--checkpoint`. Then train and evaluate using the same commands as above and your new config.
@@ -36,7 +59,7 @@ The example download source is `gs://openpi-assets/checkpoints/pi05_libero`. It 
 |---|---|
 | `src/rl_vla/` | Learners, collection, evaluation, OpenPI and task adapters |
 | `configs/` | Runnable toy settings and real-policy templates |
-| `third_party/openpi/` | Unmodified upstream source at the roadmap's commit |
+| `third_party/openpi/` | Optional local upstream checkout at the roadmap's commit; fetched separately |
 | `checkpoints/openpi/` | Future VLA weights plus normalization assets |
 | `datasets/raw/`, `datasets/processed/` | Future demonstrations and converted episodes |
 | `datasets/manifest.example.json` | Dataset metadata to fill when the format is known |

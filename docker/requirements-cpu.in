@@ -1,0 +1,14 @@
+# Linux x86_64 / CPython 3.11. Keep the learner and OpenPI client separate
+# from the OpenPI server's JAX/CUDA environment.
+numpy==1.26.4
+torch==2.7.0+cpu
+gymnasium==1.3.0
+# Runtime dependencies of the pinned OpenPI client (installed from source).
+dm-tree==0.1.10
+msgpack==1.2.2
+pillow==12.3.0
+websockets==15.0.1
+# Build backends for our wheel and the source-pinned OpenPI client.
+setuptools==80.9.0
+wheel==0.45.1
+hatchling==1.27.0

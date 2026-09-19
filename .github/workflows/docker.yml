@@ -1,0 +1,33 @@
+name: Container checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  containers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Dockerfiles and Compose
+        run: |
+          docker compose --profile test --profile libero --profile gpu config --quiet
+          docker compose -f compose.gpu-tests.yaml config --quiet
+          docker build --check .
+          docker build --check --target gpu .
+          docker build --check -f docker/openpi.Dockerfile .
+      - name: Build test and simulator images
+        run: docker compose build test libero
+      - name: Run unit and websocket integration tests
+        run: docker compose run --rm test
+      - name: Lint application and tests
+        run: docker compose run --rm --entrypoint python test -m ruff check --no-cache src tests
+      - name: Train and evaluate both learners in the image
+        run: docker run --rm --entrypoint python rl-vla:test /opt/rl-vla/smoke.py
+      - name: Render, reset, and step real LIBERO
+        run: docker run --rm --entrypoint python rl-vla:libero /opt/rl-vla/smoke.py --libero

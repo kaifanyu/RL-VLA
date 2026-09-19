@@ -1,0 +1,19 @@
+# Allow-list: no local environments, Git credentials, weights, data, or run logs.
+**
+!pyproject.toml
+!README.md
+!src/
+!src/**
+!configs/
+!configs/**
+!tests/
+!tests/**
+!docker/
+!docker/*.py
+!docker/*.in
+!docker/*.lock
+!docker/*.yaml
+!docker/*.Dockerfile
+!docker/*.sh
+**/__pycache__/
+**/*.pyc

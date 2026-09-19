@@ -1,0 +1,89 @@
+name: rl-vla
+
+x-learner: &learner
+  platform: linux/amd64
+  init: true
+  working_dir: /app
+  user: "${RL_VLA_UID:-1000}:${RL_VLA_GID:-1000}"
+  shm_size: "1gb"
+  security_opt:
+    - no-new-privileges:true
+  environment: &learner-environment
+    RL_VLA_OPENPI_HOST: ${RL_VLA_OPENPI_HOST:-openpi}
+    RL_VLA_OPENPI_PORT: ${RL_VLA_OPENPI_PORT:-8000}
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  volumes:
+    - ./runs:/app/runs
+    - ./configs:/app/configs:ro
+    - ./checkpoints:/app/checkpoints:ro
+    - ./datasets:/app/datasets:ro
+
+services:
+  learner:
+    <<: *learner
+    image: rl-vla:cpu
+    build:
+      context: .
+      target: cpu
+    command: ["--help"]
+
+  test:
+    platform: linux/amd64
+    init: true
+    profiles: [test]
+    image: rl-vla:test
+    build:
+      context: .
+      target: test
+
+  libero:
+    <<: *learner
+    profiles: [libero]
+    image: rl-vla:libero
+    build:
+      context: .
+      target: libero
+    environment:
+      <<: *learner-environment
+      MUJOCO_GL: osmesa
+      PYOPENGL_PLATFORM: osmesa
+      # Writable even when Linux users override UID/GID for their bind mounts.
+      NUMBA_CACHE_DIR: /tmp/numba
+    command: ["--help"]
+
+  openpi:
+    platform: linux/amd64
+    profiles: [gpu]
+    image: rl-vla:openpi
+    build:
+      context: .
+      dockerfile: docker/openpi.Dockerfile
+    init: true
+    shm_size: "2gb"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      XLA_PYTHON_CLIENT_PREALLOCATE: "false"
+      OPENPI_PORT: "8000"
+      OPENPI_CONFIG: ${OPENPI_MODEL_CONFIG:-pi05_libero}
+      OPENPI_CHECKPOINT: ${OPENPI_CHECKPOINT_DIR:-/checkpoints/pi05_libero}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    ports:
+      - "${OPENPI_BIND_ADDRESS:-127.0.0.1}:${OPENPI_PORT:-8000}:8000"
+    volumes:
+      - ./checkpoints/openpi:/checkpoints:ro
+      - openpi-cache:/home/app/.cache
+    command: ["serve"]
+
+volumes:
+  openpi-cache:
