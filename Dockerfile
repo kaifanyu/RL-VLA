@@ -51,6 +51,8 @@ COPY src ./src
 RUN uv pip install --python /opt/venv/bin/python --no-cache --no-deps --no-build-isolation . \
     && uv pip check --python /opt/venv/bin/python
 COPY configs ./configs
+COPY scripts ./scripts
+COPY docs/dice-upstream-LICENSE.txt /opt/licenses/dice-upstream-LICENSE
 COPY docker/smoke.py /opt/rl-vla/smoke.py
 RUN mkdir -p /app/runs /app/checkpoints /app/datasets /home/app/.cache \
     && chown -R app:app /app/runs /app/checkpoints /app/datasets /home/app

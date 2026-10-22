@@ -19,6 +19,8 @@ from rl_vla.runtime import (
     write_json,
 )
 
+OFF_POLICY = {"sac", "flashsac"}
+
 
 def train(config: dict, output: str, init_from: str | None = None) -> dict:
     settings = config["train"]
@@ -76,8 +78,10 @@ def train(config: dict, output: str, init_from: str | None = None) -> dict:
                 counters["primitive_steps"] += int(info["executed_steps"])
                 episode_return += float(info["raw_return"])
                 episode_steps += int(info["executed_steps"])
-                if config["algorithm"] == "sac":
+                if config["algorithm"] in OFF_POLICY:
                     replay.add(**transition)
+                    if hasattr(learner, "observe"):  # FlashSAC reward-scale statistics.
+                        learner.observe(reward, info["discount"], terminated, truncated)
                     if decision >= int(settings.get("learning_starts", 256)) and len(replay) >= batch_size:
                         for _ in range(int(settings.get("updates_per_decision", 1))):
                             metrics = learner.update(replay.sample(batch_size, device=device))
@@ -114,7 +118,7 @@ def train(config: dict, output: str, init_from: str | None = None) -> dict:
                         "base_calls": env.base_calls,
                         "base_inference_seconds": env.base_inference_seconds,
                         "gradient_steps_per_decision": (counters["updates"] / decision
-                                                        if config["algorithm"] == "sac" else None),
+                                                        if config["algorithm"] in OFF_POLICY else None),
                         "metrics": metrics} | event
                     log.write(json.dumps(record, allow_nan=False) + "\n")
                     log.flush()

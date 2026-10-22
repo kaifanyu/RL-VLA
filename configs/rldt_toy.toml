@@ -1,0 +1,49 @@
+algorithm = "rldt"
+
+[policy]
+kind = "toy"
+horizon = 4
+seed = 0
+
+[env]
+kind = "toy"
+
+[env.kwargs]
+max_steps = 24
+gamma = 0.99
+shaping_scale = 0.1
+
+[train]
+seed = 0
+iterations = 3
+collect_decisions = 16
+critic_steps = 4
+actor_steps = 2
+critic_batch_size = 8
+actor_batch_size = 2
+critic_trajectories = 2
+replay_capacity = 256
+save_every = 3
+
+[rldt]
+ode_steps = 4
+execute_steps = 4
+particles = 8
+kappa0 = 0.001
+kernel_mode = "official"
+reference = "moving"
+consistency_weight = 0.5
+constraint_weight = 0.2
+actor_lr = 0.00002
+actor_warmup_steps = 2
+max_grad_norm = 1.0
+critic_lr = 0.001
+critic_width = 32
+critic_warmup_iterations = 1
+target_momentum = 0.995
+gamma = 0.99
+td_lambda = 0.5
+bootstrap_samples = 2
+clip_bootstrap = false
+balanced_replay = false
+fresh_fraction = 0.33

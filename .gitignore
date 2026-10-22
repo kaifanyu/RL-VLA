@@ -1,4 +1,5 @@
 .venv/
+.venv-robustness/
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -9,6 +10,8 @@ __pycache__/
 !.env.example
 tmp/
 third_party/openpi/
+third_party/libero_plus/
+third_party/libero_pro/
 checkpoints/**
 !checkpoints/README.md
 !checkpoints/openpi/
@@ -23,3 +26,13 @@ datasets/**
 !checkpoints/openpi/pi05_libero/.gitkeep
 runs/**
 !runs/README.md
+
+# FlashSAC upstream checkout; recreate with scripts/fetch_flashsac.sh
+third_party/FlashSAC/
+
+# DICE reference checkout; recreate from third_party/README.md.
+third_party/dice_rl_upstream/
+
+# Local caches and the already-applied FlashSAC handoff patch.
+.cache/
+/rl-vla-flashsac.patch

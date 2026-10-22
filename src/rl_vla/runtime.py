@@ -44,7 +44,11 @@ def make_learner(config: dict, env: ResidualChunkEnv):
     from rl_vla.ppo import PPO
     from rl_vla.sac import SAC
 
-    cls = SAC if config["algorithm"] == "sac" else PPO
+    if config["algorithm"] == "flashsac":
+        from rl_vla.flashsac import FlashSAC  # Needs third_party/FlashSAC.
+        cls = FlashSAC
+    else:
+        cls = SAC if config["algorithm"] == "sac" else PPO
     settings = dict(config.get(config["algorithm"], {}))
     settings.setdefault("batch_size", config["train"].get("batch_size", 256))
     return cls(env.obs_dim, env.critic_dim, env.action_dim, settings,

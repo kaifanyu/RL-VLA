@@ -18,5 +18,13 @@ Record at least:
 
 For SAC residual replay, ordinary demonstration actions are insufficient on their own. Their conditioning base chunk and sampling protocol must be known, and actions must be representable within the residual bounds. Controller-clipped actions cannot generally be inverted uniquely into the original residual. Preserve the actual sampled residual during online collection.
 
-PPO uses newly collected on-policy rollouts, not demonstration replay. Future demonstrations can support pretraining or a separate supervised anchor. For OpenPI distillation, construct native action chunks with padding masks and compatible normalization; use the upstream flow loss. These data training stages are not implemented in this baseline.
+PPO uses newly collected on-policy rollouts. RLDT also collects online trajectories.
+The separate [DICE adaptation](dice.md#demonstration-data-preparation) implements
+demonstration replay with an explicit episode archive, checkpoint normalization,
+chunk conversion and finite-horizon returns. Its importer does not accept an
+arbitrary dataset directory. See [local data locations](../datasets/README.md).
+
+For future OpenPI distillation, construct native action chunks with padding
+masks and compatible normalization; use the upstream flow loss. That supervised
+distillation stage is not implemented here.
 

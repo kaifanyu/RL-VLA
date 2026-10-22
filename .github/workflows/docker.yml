@@ -25,8 +25,8 @@ jobs:
         run: docker compose build test libero
       - name: Run unit and websocket integration tests
         run: docker compose run --rm test
-      - name: Lint application and tests
-        run: docker compose run --rm --entrypoint python test -m ruff check --no-cache src tests
+      - name: Lint application, tests and scripts
+        run: docker compose run --rm --entrypoint python test -m ruff check --no-cache src tests scripts
       - name: Train and evaluate both learners in the image
         run: docker run --rm --entrypoint python rl-vla:test /opt/rl-vla/smoke.py
       - name: Render, reset, and step real LIBERO

@@ -1,8 +1,39 @@
-# RL-VLA baseline
+# RL-VLA: OpenPI reinforcement learning and LIBERO evaluation
 
-Train **residual SAC or PPO around a frozen OpenPI policy**. OpenPI proposes an action chunk; a small PyTorch actor learns bounded corrections. Both algorithms use the same observations, action interface and reward accounting.
+Train and evaluate policies built around the LIBERO-adapted OpenPI `pi05_libero`
+checkpoint. The repository includes several learning methods with distinct
+entrypoints and checkpoint formats:
 
-**Included:** CPU toy runs, both learners, tests, evaluation, checkpoints and the real OpenPI websocket client adapter. Docker builds fetch pinned upstream sources and include the learner and a headless LIBERO simulator with pinned dependencies/assets. The `gpu` target adds CUDA learning and sequential simulation demos. A separate OpenPI GPU server image is configured. **Needed for VLA runs:** a compatible checkpoint and sufficient GPU memory. No model weights or demonstration datasets are included. The toy is a software check, not evidence of robot performance.
+| Method | What learns | Entrypoint and guide |
+|---|---|---|
+| Residual SAC / PPO | Small PyTorch actor and critics; OpenPI stays frozen | `python -m rl_vla train`; [LIBERO setup](docs/libero.md) |
+| Residual FlashSAC | FlashSAC actor and critics around frozen OpenPI | `python -m rl_vla train`; [FlashSAC guide](docs/flashsac.md) |
+| RLDT | Native JAX π0.5 action expert; vision/language backbone stays frozen | `bash scripts/run_rldt.sh`; [RLDT guide](docs/rldt.md) |
+| DICE adaptation | PyTorch residual and critics using frozen π0.5 features and demonstration replay | `bash scripts/run_dice.sh`; [DICE guide](docs/dice.md) |
+
+Real-checkpoint smoke tests verify RLDT updates and DICE collection/updates;
+they do not establish a training improvement or reproduce those papers' results.
+The example training configs target ordinary LIBERO Spatial. Training on
+LIBERO-PRO still needs its task adapter and an explicit train/evaluation split.
+
+The original Spatial baseline completed **495/500 episodes successfully (99%)**.
+The separate [LIBERO-Plus / PRO queue](docs/robustness-evaluation.md) evaluates
+20,030 perturbation episodes, including 2,000 explicitly local PRO Environment
+cases. Its ongoing results are partial. See the [verification record](docs/verification.md)
+for measured results and limitations.
+
+For the prepared `/workspace/upenn/RL-VLA` installation, start with the
+[local server and baseline guide](docs/local-baseline.md). As checked on
+**2026-10-21 (America/New_York)**, its container has **one 64 GiB GPU** exposed as
+CUDA device 0; ten physical GPUs exist on the host. More devices require a new
+allocation from the administrator. The three local Python environments have
+different roles and should remain separate.
+
+Source, configurations, tests, launch scripts and documentation belong in Git.
+Model weights, demonstration datasets, virtual environments, upstream checkouts,
+and raw results stay local. A fresh clone needs the dependencies and assets
+described below. Docker covers the residual baseline and simulator; the new
+RLDT/DICE launchers use the documented local environments.
 
 ## Run with Docker
 
@@ -15,7 +46,7 @@ docker compose run --rm learner train --config configs/sac_toy.toml --steps 128 
 docker compose run --rm --entrypoint python libero /opt/rl-vla/smoke.py --libero
 ```
 
-Results persist locally in `runs/`, which is ignored by Git and excluded from Docker builds. No host Python environment or `third_party/` checkout is required for these builds. See the [Docker deployment guide](docs/docker.md) for PPO, evaluation, remote OpenPI, GPU service deployment, checkpoint mounts and dependency updates. The full OpenPI server build and checkpoint inference still require validation on a suitable GPU machine; see [verification results](docs/verification.md).
+Results persist locally in `runs/`, which is ignored by Git and excluded from Docker builds. No host Python environment or `third_party/` checkout is required for these builds. See the [Docker deployment guide](docs/docker.md) for PPO, evaluation, remote OpenPI, GPU service deployment, checkpoint mounts and dependency updates. The full OpenPI GPU Docker build remains unverified; local checkpoint inference and LIBERO rollouts have now passed on gpu9. See [verification results](docs/verification.md).
 
 For an NVIDIA GPU exposed to Docker, build the CUDA demo image and run one task:
 
@@ -60,10 +91,11 @@ The example download source is `gs://openpi-assets/checkpoints/pi05_libero`. It 
 | `src/rl_vla/` | Learners, collection, evaluation, OpenPI and task adapters |
 | `configs/` | Runnable toy settings and real-policy templates |
 | `third_party/openpi/` | Optional local upstream checkout at the roadmap's commit; fetched separately |
-| `checkpoints/openpi/` | Future VLA weights plus normalization assets |
-| `datasets/raw/`, `datasets/processed/` | Future demonstrations and converted episodes |
+| `checkpoints/openpi/` | Local VLA weights plus normalization assets; ignored by Git |
+| `datasets/raw/`, `datasets/processed/` | Local demonstrations and converted episodes; see [data locations](datasets/README.md) |
 | `datasets/manifest.example.json` | Dataset metadata to fill when the format is known |
-| `runs/` | Residual weights, logs and evaluation results |
+| `runs/` | Policy/optimizer checkpoints, logs and evaluation results; ignored by Git |
+| `scripts/` | Local launchers, resource monitors, analysis and video tools |
 | `tests/` | Numerical correctness and integration checks |
 | `docs/` | [Design](docs/design.md), [task integration](docs/environment.md), [data](docs/datasets.md), [sources](docs/research.md) |
 
@@ -83,4 +115,30 @@ uv pip install --python .venv/Scripts/python.exe -e ".[dev]"
 
 On Linux, replace `.venv/Scripts/python.exe` with `.venv/bin/python`. Install the OpenPI client using [its setup instructions](docs/openpi.md). The heavyweight OpenPI server has its **own** Linux/GPU environment. `requirements-tested.txt` records the exact baseline packages tested here; the OpenPI source commit is recorded in `third_party/README.md`.
 
-This baseline updates the residual actor and critics. Direct flow-policy fine-tuning, distillation, dataset replay, batched Warp tasks, and visual robustness training remain later research stages described in [the design notes](docs/design.md).
+RLDT and DICE use the separate OpenPI environment described in their guides;
+do not install the root project's extras into that locked environment.
+The historical [design notes](docs/design.md) describe the original roadmap;
+the method guides and verification record describe the current implementation.
+
+## Review and push manually
+
+Run these commands from the repository root. Review the staged paths and diff
+before committing; `git diff` alone does not show new, untracked source files.
+
+```bash
+git status --short
+git diff --check
+git add README.md .gitignore .dockerignore Dockerfile .github compose.yaml pyproject.toml src tests configs scripts docs \
+  third_party/README.md checkpoints/README.md datasets/README.md runs/README.md rldt.pdf
+git diff --cached --stat
+git diff --cached --check
+git diff --cached
+git commit -m "Add RLDT, DICE, FlashSAC and LIBERO robustness evaluation"
+git push origin main
+```
+
+The local FlashSAC handoff patch is already applied and ignored. The DICE source
+checkout is ignored as well; its pinned fetch instructions and license notice
+are retained. `rldt.pdf` is the supplied paper referenced by the RLDT guide.
+GitHub will receive source and documentation, not the local `runs/` results.
+No commit or push is performed by the preparation workflow itself.

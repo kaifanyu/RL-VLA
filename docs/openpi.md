@@ -1,6 +1,11 @@
 # Connect a frozen openpi policy
 
-The RL actor learns bounded corrections around a frozen action chunk. Openpi runs in a separate GPU process; the lightweight RL client uses NumPy over a websocket. The included mock policy needs no model weights. No weights have been downloaded.
+For residual SAC/PPO/FlashSAC, the RL actor learns bounded corrections around a
+frozen action chunk. OpenPI runs in a separate GPU process; the lightweight
+client uses NumPy over a websocket. The included mock policy needs no weights.
+The prepared server already has `pi05_libero` weights and validated local
+inference; a fresh Git clone includes neither weights nor environments.
+[RLDT](rldt.md) and [DICE](dice.md) load OpenPI in the learner process instead.
 
 For container deployment, use the [Docker GPU service](docker.md#optional-local-gpu-policy-service). It builds the pinned server separately from the learner, applies the required Transformers replacement, and includes startup checks and HTTP readiness. Its checkpoint must be mounted locally. The instructions below remain the manual source-environment alternative.
 
@@ -8,7 +13,10 @@ For container deployment, use the [Docker GPU service](docker.md#optional-local-
 
 Use a Linux GPU machine or Ubuntu under WSL2 for the server. Upstream tests Ubuntu 22.04 and does not support native Windows. Its stated inference memory requirement is **more than 8 GB**, before adding the simulator and RL learner. WSL2 is a deployment suggestion, not an upstream-tested guarantee. See the [upstream requirements and installation](https://github.com/Physical-Intelligence/openpi/blob/215abfb217dbac7d5f1273282331b9b1866c0479/README.md#requirements).
 
-The baseline includes the source checkout in `third_party/openpi`; no weights are included. Use **Python 3.11** for both environments. The following are **Bash** commands for preparing the server. Start at the RL-VLA repository root, with Git and [uv](https://docs.astral.sh/uv/getting-started/installation/) installed:
+The local source checkout belongs in `third_party/openpi` and is ignored by Git.
+Use **Python 3.11** for both environments. The following are **Bash** commands for
+preparing a new server. Start at the RL-VLA repository root, with Git and
+[uv](https://docs.astral.sh/uv/getting-started/installation/) installed:
 
 ```bash
 RL_VLA_ROOT="$PWD"
@@ -24,7 +32,10 @@ GIT_LFS_SKIP_SMUDGE=1 uv sync --frozen --python 3.11
 GIT_LFS_SKIP_SMUDGE=1 uv pip install -e .
 ```
 
-This creates `third_party/openpi/.venv`, separate from the RL learner's root `.venv`. The commit was verified against upstream on 2026-09-19; it matches the supplied roadmap and was upstream HEAD at inspection. The source pin is an integration reference, not a claim that GPU deployment has been tested here.
+This creates `third_party/openpi/.venv`, separate from the root `.venv`. The
+commit matches the supplied roadmap. Local GPU inference and real LIBERO
+evaluation subsequently passed; see the [verification record](verification.md).
+The separate OpenPI Docker build remains unverified.
 
 ## 2. Download the checkpoint when ready
 

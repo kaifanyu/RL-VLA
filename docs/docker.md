@@ -95,6 +95,13 @@ checkpoints/openpi/pi05_libero/
 
 The service mounts `checkpoints/openpi` read-only at `/checkpoints`. `OPENPI_CHECKPOINT_DIR` must name a directory inside that container mount; it defaults to `/checkpoints/pi05_libero`. The entrypoint requires local mounted weights and normalization assets, rejects download URIs, and checks GPU access before starting inference. Checkpoints are excluded from the build context.
 
+The service requests one GPU through `deploy.resources.reservations.devices`
+with `count: 1`, following [Docker's GPU reservation documentation](https://docs.docker.com/compose/how-tos/gpu-support/).
+An administrator can select an assigned host GPU by replacing `count` with
+`device_ids: ["HOST_GPU_UUID_OR_INDEX"]`; these fields are mutually exclusive.
+Use the Docker host's identifier, not an index remapped inside another container.
+This file does not change the allocation of the already-running UPenn container.
+
 For a server in the same Compose project, keep these `.env` values:
 
 ```dotenv
@@ -117,7 +124,11 @@ Readiness probes the upstream `/healthz` endpoint after the checkpoint loads; GP
 
 The policy listens on port **8000 inside Docker**. `OPENPI_PORT` in `.env` changes only the host-published port; it does not change the service-to-service endpoint `openpi:8000`. `OPENPI_BIND_ADDRESS=127.0.0.1` makes that published port available only through the host's loopback interface. To serve a different machine, set an appropriate reachable host bind address and restrict access to the intended clients; configure that remote client's `RL_VLA_OPENPI_PORT` to the published port.
 
-Full OpenPI server image build and real checkpoint inference have **not yet been verified**. The setup machine has an 8 GB GPU, while the selected model's documented inference requirement exceeds 8 GB. Weights and the server build also need additional disk space. No checkpoint was downloaded. GPU passthrough (`nvidia-smi` inside Docker), Dockerfile checks and an upstream frozen-lock installation dry run passed during setup. These checks do not establish model inference; see the [verification record](verification.md).
+The full OpenPI server image build remains **unverified**. Earlier Docker checks
+were performed on an 8 GB Windows/WSL2 setup. The current Linux server has a
+64 GiB assigned GPU, downloaded weights and successful local inference/LIBERO
+rollouts, but no Docker executable. Those local results do not validate this
+Docker image. See the dated [verification record](verification.md).
 
 ## Dependencies and build inputs
 

@@ -15,8 +15,8 @@ def load_config(path: str | Path) -> dict:
     """
     with Path(path).open("rb") as stream:
         config = tomllib.load(stream)
-    if config.get("algorithm") not in {"sac", "ppo"}:
-        raise ValueError("algorithm must be 'sac' or 'ppo'")
+    if config.get("algorithm") not in {"sac", "flashsac", "ppo"}:
+        raise ValueError("algorithm must be 'sac', 'flashsac' or 'ppo'")
     for section in ("env", "base", "chunk", "train"):
         if section not in config:
             raise ValueError(f"Missing [{section}] in {path}")

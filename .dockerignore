@@ -8,6 +8,11 @@
 !configs/**
 !tests/
 !tests/**
+!scripts/
+!scripts/*.py
+!scripts/*.sh
+!docs/
+!docs/dice-upstream-LICENSE.txt
 !docker/
 !docker/*.py
 !docker/*.in

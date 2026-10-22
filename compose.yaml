@@ -65,7 +65,6 @@ services:
     security_opt:
       - no-new-privileges:true
     environment:
-      NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
       XLA_PYTHON_CLIENT_PREALLOCATE: "false"
       OPENPI_PORT: "8000"
@@ -76,6 +75,8 @@ services:
         reservations:
           devices:
             - driver: nvidia
+              # Request one GPU from the Docker host. This does not change an
+              # existing container's assignment; see docs/local-baseline.md.
               count: 1
               capabilities: [gpu]
     ports:

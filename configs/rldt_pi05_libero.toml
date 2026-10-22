@@ -1,0 +1,56 @@
+algorithm = "rldt"
+
+[policy]
+kind = "pi05"
+checkpoint = "checkpoints/openpi/pi05_libero"
+model_config = "pi05_libero"
+projection_only = false
+
+[env]
+kind = "external"
+factory = "rl_vla.envs.libero:make_env"
+# Simulator runs in its existing environment, separate from JAX/OpenPI.
+python = ".venv/bin/python"
+
+[env.kwargs]
+task_suite = "libero_spatial"
+task_id = 0
+max_steps = 220
+camera_resolution = 256
+resize_size = 224
+settle_steps = 10
+
+[train]
+seed = 0
+iterations = 100
+collect_decisions = 32
+critic_steps = 64
+actor_steps = 4
+critic_batch_size = 64
+actor_batch_size = 1
+critic_trajectories = 2
+replay_capacity = 4096
+save_every = 25
+
+[rldt]
+ode_steps = 10
+execute_steps = 5
+particles = 8
+kappa0 = 0.001
+kernel_mode = "official"
+reference = "moving"
+consistency_weight = 0.5
+constraint_weight = 0.2
+actor_lr = 0.00002
+actor_warmup_steps = 32
+max_grad_norm = 1.0
+critic_lr = 0.001
+critic_width = 256
+critic_warmup_iterations = 2
+target_momentum = 0.995
+gamma = 0.999
+td_lambda = 0.5
+bootstrap_samples = 2
+clip_bootstrap = true
+balanced_replay = true
+fresh_fraction = 0.33
