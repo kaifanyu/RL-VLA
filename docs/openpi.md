@@ -39,6 +39,13 @@ The separate OpenPI Docker build remains unverified.
 
 ## 2. Download the checkpoint when ready
 
+The [PARCC installation](parcc-setup.md) already contains the complete checkpoint.
+To download or reverify it over public HTTPS without Google Cloud CLI, activate
+that installation with `source scripts/env.sh` and run
+`python scripts/download_pi05.py`. The script checks each object's byte length
+and GCS CRC32C checksum and saves the object generations in
+`runs/setup/pi05_download.json`.
+
 The concrete example is `pi05_libero`, which is trained for LIBERO's controller, observations and tasks. It is not a universal robot checkpoint. The [official checkpoint table](https://github.com/Physical-Intelligence/openpi/blob/215abfb217dbac7d5f1273282331b9b1866c0479/README.md#model-checkpoints) lists alternatives.
 
 | Setting | Value |

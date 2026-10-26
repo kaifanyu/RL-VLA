@@ -1,8 +1,15 @@
 # RL-VLA: OpenPI reinforcement learning and LIBERO evaluation
 
 Train and evaluate policies built around the LIBERO-adapted OpenPI `pi05_libero`
-checkpoint. The repository includes several learning methods with distinct
-entrypoints and checkpoint formats:
+checkpoint.
+
+For the installation in `/vast/projects/jgu32/lab/kai/RL-VLA`, use the
+[PARCC setup and verification guide](docs/parcc-setup.md). Its environments,
+checkpoint, simulator assets and caches are inside this repository. The
+`/workspace/upenn` results below are historical results from another installation.
+
+The repository includes several learning methods with distinct entrypoints
+and checkpoint formats:
 
 | Method | What learns | Entrypoint and guide |
 |---|---|---|

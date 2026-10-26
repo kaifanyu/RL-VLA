@@ -419,7 +419,7 @@ def train(config, output, init_from=None):
 
 def evaluate(config, output, checkpoint=None, episodes=5, seed=100000):
     path = Path(output)
-    if path.exists():
+    if path.exists() or path.with_suffix(".episodes.jsonl").exists():
         raise FileExistsError(path)
     print("Loading flow policy and evaluation checkpoint...", flush=True)
     flow = make_flow(config["policy"])
@@ -428,12 +428,15 @@ def evaluate(config, output, checkpoint=None, episodes=5, seed=100000):
     r = config["rldt"]
     sample = jax.jit(lambda p, c, key, frozen: flow.sample(
         p, c, key, int(r["ode_steps"]), frozen=frozen)[0])
-    key = jax.random.PRNGKey(seed)
     results = []
+    path.parent.mkdir(parents=True, exist_ok=True)
+    episode_log = path.with_suffix(".episodes.jsonl").open("x")
     try:
         for episode in range(episodes):
             print(f"Evaluation episode {episode + 1}/{episodes}: resetting environment", flush=True)
-            raw, _ = env.reset(seed=seed + episode)
+            # Match each episode's noise independently of earlier episode lengths.
+            key = jax.random.PRNGKey(seed + episode)
+            raw, reset_info = env.reset(seed=seed + episode)
             steps, total = 0, 0.
             for decision in range(10000):
                 key, subkey = jax.random.split(key)
@@ -448,8 +451,11 @@ def evaluate(config, output, checkpoint=None, episodes=5, seed=100000):
                     print(f"Evaluation episode {episode + 1}: {steps} primitive steps", flush=True)
             else:
                 raise RuntimeError("Evaluation exceeded 10000 decisions without episode boundary")
-            results.append({"seed": seed + episode, "success": bool(info.get("is_success", False)),
+            results.append({"seed": seed + episode, "reset": reset_info,
+                            "success": bool(info.get("is_success", False)),
                             "return": total, "primitive_steps": steps})
+            episode_log.write(json.dumps(results[-1], allow_nan=False) + "\n")
+            episode_log.flush()
             print(json.dumps(results[-1]), flush=True)
         result = {"config": config, "checkpoint": checkpoint, "episodes": results,
                   "success_rate": float(np.mean([e["success"] for e in results]))}
@@ -457,6 +463,7 @@ def evaluate(config, output, checkpoint=None, episodes=5, seed=100000):
         write_json(path, result)
         return result
     finally:
+        episode_log.close()
         env.close()
 
 

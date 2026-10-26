@@ -16,9 +16,11 @@ with explicit differences described below.
 
 ## Run the pipeline
 
-This workspace already has the two Python environments, the local π0.5
-checkpoint, and LIBERO configured. **No installation is needed here.** Run these
-commands from `/workspace/upenn/RL-VLA`:
+The prepared installations have two Python environments, the local π0.5
+checkpoint, and LIBERO configured. For `/vast/projects/jgu32/lab/kai/RL-VLA`,
+follow the [PARCC guide](parcc-setup.md) and run GPU commands inside a Slurm
+allocation. The `/workspace/upenn` verification results elsewhere in this guide
+come from the earlier server. Run the following commands from the repository root:
 
 ```bash
 # Validate the complete training loop on a small CPU flow policy.
@@ -89,7 +91,7 @@ pinned installation recipes, including LIBERO assets and the OSMesa native
 libraries. Keep OpenPI's dependency lock separate from the root project's
 Torch/Gymnasium dependencies. The launcher selects four available CPUs,
 preferring `4-7` when permitted, and places default data caches under `.cache/`
-beside the repository directory. Set `RLDT_CPUSET` to override that selection,
+inside the repository directory. Set `RLDT_CPUSET` to override that selection,
 `RLDT_PYTHON` to its OpenPI interpreter, `OPENPI_DATA_HOME` to its OpenPI cache,
 and `LIBERO_CONFIG_PATH` to its configured LIBERO path directory as needed.
 The simulator interpreter is separately selected by `[env].python`.
