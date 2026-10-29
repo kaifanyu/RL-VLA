@@ -11,6 +11,16 @@
 !scripts/
 !scripts/*.py
 !scripts/*.sh
+!scripts/*.slurm
+!integrations/
+!integrations/**/
+!integrations/**/*.py
+!integrations/**/*.json
+!integrations/**/*.yaml
+integrations/**/evidence/
+integrations/**/validation_gpu/
+integrations/**/smoke/
+integrations/**/assets/downloads/
 !docs/
 !docs/dice-upstream-LICENSE.txt
 !docker/

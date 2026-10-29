@@ -1,4 +1,4 @@
-"""Download the official JAX pi05_libero checkpoint and verify GCS CRC32C hashes.
+"""Download an official JAX pi05 checkpoint and verify GCS CRC32C hashes.
 
 Uses public HTTPS, so no Google Cloud credentials or CLI are needed. Existing
 valid files are reused; interrupted files are resumed using HTTP byte ranges.
@@ -17,7 +17,6 @@ from pathlib import Path
 import google_crc32c
 
 BUCKET = "openpi-assets"
-PREFIX = "checkpoints/pi05_libero/"
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -29,8 +28,10 @@ def checksum(path):
     return base64.b64encode(digest.digest()).decode()
 
 
-def download(item, destination):
-    relative = Path(item["name"].removeprefix(PREFIX))
+def download(item, destination, prefix):
+    if not item["name"].startswith(prefix):
+        raise ValueError(f"Object outside checkpoint prefix: {item['name']}")
+    relative = Path(item["name"].removeprefix(prefix))
     if relative.is_absolute() or ".." in relative.parts:
         raise ValueError(f"Unsafe object name: {item['name']}")
     target = destination / relative
@@ -45,6 +46,9 @@ def download(item, destination):
            + "?generation=" + item["generation"])
     for attempt in range(5):
         try:
+            # pi05_base includes an empty commit_success.txt marker.
+            if size == 0:
+                partial.write_bytes(b"")
             offset = partial.stat().st_size if partial.exists() else 0
             if offset < size:
                 request = urllib.request.Request(url, headers={"Range": f"bytes={offset}-"})
@@ -67,13 +71,20 @@ def download(item, destination):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--destination", type=Path, default=ROOT / "checkpoints/openpi/pi05_libero")
+    parser.add_argument("--checkpoint", choices=("pi05_libero", "pi05_base"), default="pi05_libero")
+    parser.add_argument("--destination", type=Path)
     parser.add_argument("--workers", type=int, default=4)
-    parser.add_argument("--manifest", type=Path, default=ROOT / "runs/setup/pi05_download.json")
+    parser.add_argument("--manifest", type=Path)
     args = parser.parse_args()
+    prefix = f"checkpoints/{args.checkpoint}/"
+    if args.destination is None:
+        args.destination = ROOT / "checkpoints/openpi" / args.checkpoint
+    if args.manifest is None:
+        name = "pi05_download.json" if args.checkpoint == "pi05_libero" else "pi05_base_download.json"
+        args.manifest = ROOT / "runs/setup" / name
     items, page = [], None
     while True:
-        query = {"prefix": PREFIX}
+        query = {"prefix": prefix}
         if page:
             query["pageToken"] = page
         url = f"https://storage.googleapis.com/storage/v1/b/{BUCKET}/o?" + urllib.parse.urlencode(query)
@@ -87,8 +98,8 @@ def main():
         raise ValueError("Expected a nonempty checkpoint with GCS CRC32C checksums")
     print(f"Verifying {len(items)} objects, {sum(int(i['size']) for i in items):,} bytes", flush=True)
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
-        list(pool.map(lambda item: download(item, args.destination), items))
-    manifest = {"source": f"gs://{BUCKET}/{PREFIX}", "verified": True,
+        list(pool.map(lambda item: download(item, args.destination, prefix), items))
+    manifest = {"source": f"gs://{BUCKET}/{prefix}", "verified": True,
                 "destination": str(args.destination.resolve()), "objects": items}
     args.manifest.parent.mkdir(parents=True, exist_ok=True)
     args.manifest.write_text(json.dumps(manifest, indent=2) + "\n")

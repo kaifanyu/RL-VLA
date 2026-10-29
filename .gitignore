@@ -1,6 +1,5 @@
-.venv/
-.venv-robustness/
-.venv-pro/
+# Local environments and caches
+.venv*/
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -10,9 +9,26 @@ __pycache__/
 .env.*
 !.env.example
 tmp/
-third_party/openpi/
-third_party/libero_plus/
-third_party/libero_pro/
+# Generated logs and downloads
+*.log
+*.log.*
+*.zip
+*.partial
+slurm-*.out
+
+# Upstream source is recreated from the dependency lock and patches.
+third_party/*/
+!third_party/patches/
+
+# Generated benchmark evidence (normalization inputs remain versioned).
+integrations/multibench/robotwin/smoke/
+integrations/multibench/maniskill/validation_gpu/
+integrations/multibench/maniskill/assets_manifest.json
+integrations/multibench/maniskill/device_audit.json
+integrations/multibench/maniskill/policy_contract_check.json
+integrations/multibench/robocasa/assets/downloads/
+integrations/multibench/robocasa/assets/manifest.json
+integrations/multibench/robocasa/setup_manifest.json
 checkpoints/**
 !checkpoints/README.md
 !checkpoints/openpi/
@@ -27,12 +43,6 @@ datasets/**
 !checkpoints/openpi/pi05_libero/.gitkeep
 runs/**
 !runs/README.md
-
-# FlashSAC upstream checkout; recreate with scripts/fetch_flashsac.sh
-third_party/FlashSAC/
-
-# DICE reference checkout; recreate from third_party/README.md.
-third_party/dice_rl_upstream/
 
 # Local caches and the already-applied FlashSAC handoff patch.
 .cache/

@@ -10,7 +10,23 @@ export HF_HOME="${HF_HOME:-$RL_VLA_ROOT/.cache/huggingface}"
 export HF_LEROBOT_HOME="${HF_LEROBOT_HOME:-$RL_VLA_ROOT/datasets}"
 export OPENPI_DATA_HOME="${OPENPI_DATA_HOME:-$RL_VLA_ROOT/.cache/openpi}"
 export LIBERO_CONFIG_PATH="${LIBERO_CONFIG_PATH:-$RL_VLA_ROOT/.cache/libero}"
-export LD_LIBRARY_PATH="$RL_VLA_ROOT/.cache/native/usr/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+RL_VLA_NATIVE_LIBDIR="$RL_VLA_ROOT/.cache/native/usr/lib/x86_64-linux-gnu"
+if [[ -f /etc/redhat-release ]]; then
+  RL_VLA_NATIVE_LIBDIR="$RL_VLA_ROOT/.cache/native/usr/lib64"
+fi
+export LD_LIBRARY_PATH="$RL_VLA_NATIVE_LIBDIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+# Select a valid system bundle, including when Slurm inherits a login-host path.
+if [[ -z "${SSL_CERT_FILE:-}" || ! -f "$SSL_CERT_FILE" ]]; then
+  for RL_VLA_CA_BUNDLE in /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt; do
+    if [[ -f "$RL_VLA_CA_BUNDLE" ]]; then
+      export SSL_CERT_FILE="$RL_VLA_CA_BUNDLE"
+      break
+    fi
+  done
+fi
+if [[ -n "${SSL_CERT_FILE:-}" && ( -z "${REQUESTS_CA_BUNDLE:-}" || ! -f "$REQUESTS_CA_BUNDLE" ) ]]; then
+  export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE"
+fi
 export MUJOCO_GL="${MUJOCO_GL:-osmesa}" PYOPENGL_PLATFORM="${PYOPENGL_PLATFORM:-osmesa}"
 export LP_NUM_THREADS=1 NUMBA_CACHE_DIR="$RL_VLA_ROOT/.cache/numba"
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMBA_NUM_THREADS=1

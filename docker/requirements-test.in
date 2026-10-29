@@ -2,3 +2,4 @@
 -c requirements-cpu.lock
 pytest==9.1.1
 ruff==0.16.8
+pyyaml==6.0.2

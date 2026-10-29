@@ -1,0 +1,128 @@
+diff --git a/rlinf/envs/__init__.py b/rlinf/envs/__init__.py
+index dcbff81..7e763c2 100644
+--- a/rlinf/envs/__init__.py
++++ b/rlinf/envs/__init__.py
+@@ -18,6 +18,7 @@ from enum import Enum
+ class SupportedEnvType(Enum):
+     MANISKILL = "maniskill"
+     LIBERO = "libero"
++    PRO_CONTROLLED = "pro_controlled"
+     ROBOTWIN = "robotwin"
+     ISAACLAB = "isaaclab"
+     METAWORLD = "metaworld"
+@@ -48,6 +49,11 @@ def get_env_cls(env_type: str, env_cfg=None):
+         Environment class corresponding to the environment type.
+     """
+ 
++    if env_type == "pro_controlled":
++        from rlinf_bridge.environment import ControlledProEnv
++
++        return ControlledProEnv
++
+     env_type = SupportedEnvType(env_type)
+ 
+     if env_type == SupportedEnvType.MANISKILL:
+diff --git a/rlinf/envs/action_utils.py b/rlinf/envs/action_utils.py
+index 385fa49..731da3c 100644
+--- a/rlinf/envs/action_utils.py
++++ b/rlinf/envs/action_utils.py
+@@ -279,6 +279,13 @@ def prepare_actions(
+             raw_chunk_actions = raw_chunk_actions.float()
+         raw_chunk_actions = raw_chunk_actions.numpy()
+ 
++    if env_type == "pro_controlled":
++        # OPENPI already returns decoded seven-dimensional LIBERO motor commands.
++        # Clipping and early termination are owned by the shared PRO adapter.
++        if SupportedModel(model_type) != SupportedModel.OPENPI:
++            raise ValueError("pro_controlled currently supports the OpenPI policy only")
++        return raw_chunk_actions
++
+     env_type = SupportedEnvType(env_type)
+     if env_type == SupportedEnvType.LIBERO:
+         chunk_actions = prepare_actions_for_libero(
+diff --git a/rlinf/hybrid_engines/fsdp/strategy/fsdp.py b/rlinf/hybrid_engines/fsdp/strategy/fsdp.py
+index 5b7425e..6ee2524 100644
+--- a/rlinf/hybrid_engines/fsdp/strategy/fsdp.py
++++ b/rlinf/hybrid_engines/fsdp/strategy/fsdp.py
+@@ -170,6 +170,16 @@ class FSDPStrategy(FSDPStrategyBase):
+ 
+         cpu_offload = CPUOffload(offload_params=self.cfg.fsdp_config.cpu_offload)
+ 
++        ignored_modules = None
++        if self.cfg.model.model_type == "openpi" and self.cfg.model.get(
++            "enforce_native_scope", False
++        ):
++            from rlinf_bridge.fsdp_scope import ignored_modules_for_native_openpi
++
++            ignored_modules = ignored_modules_for_native_openpi(
++                model, self.cfg.model, device=Worker.torch_platform.current_device()
++            )
++
+         fsdp_model = FSDP(
+             module=model,
+             param_init_fn=init_fn,
+@@ -184,6 +194,7 @@ class FSDPStrategy(FSDPStrategyBase):
+             limit_all_gathers=self.cfg.fsdp_config.limit_all_gathers,
+             use_orig_params=self.cfg.fsdp_config.use_orig_params,
+             cpu_offload=cpu_offload,
++            ignored_modules=ignored_modules,
+         )
+         return fsdp_model
+ 
+diff --git a/rlinf/models/embodiment/openpi/__init__.py b/rlinf/models/embodiment/openpi/__init__.py
+index 484d847..d4d4143 100644
+--- a/rlinf/models/embodiment/openpi/__init__.py
++++ b/rlinf/models/embodiment/openpi/__init__.py
+@@ -123,4 +123,19 @@ def get_model(cfg: DictConfig, torch_dtype=None):
+         ],
+     )
+ 
++    if cfg.get("enforce_native_scope", False):
++        import json
++        from pathlib import Path
++
++        from pi_rl.model_contract import enforce_trainable_scope
++
++        counts = enforce_trainable_scope(model)
++        directory = cfg.get("scope_report_directory")
++        if directory:
++            path = Path(directory)
++            path.mkdir(parents=True, exist_ok=True)
++            (path / f"model_{os.getpid()}.json").write_text(
++                json.dumps(counts, indent=2) + "\n"
++            )
++
+     return model
+diff --git a/rlinf/workers/env/env_worker.py b/rlinf/workers/env/env_worker.py
+index 035b2bc..8511d48 100644
+--- a/rlinf/workers/env/env_worker.py
++++ b/rlinf/workers/env/env_worker.py
+@@ -1003,6 +1003,12 @@ class EnvWorker(Worker):
+                             rollout_result.save_flags
+                         )
+ 
++                    if self.cfg.env.train.env_type == "pro_controlled":
++                        from rlinf_bridge.tracing import record_policy_trace
++
++                        record_policy_trace(
++                            self.env_list[stage_id], rollout_result, self.model_cfg
++                        )
+                     env_output, env_info = self.env_interact_step(
+                         rollout_result.actions, stage_id
+                     )
+@@ -1139,6 +1145,15 @@ class EnvWorker(Worker):
+ 
+         return env_metrics
+ 
++    def finalize_recordings(self):
++        """Flush incomplete controlled episodes before the local Ray cluster stops."""
++        if self.cfg.env.train.env_type != "pro_controlled":
++            return
++        for env in self.env_list + self.eval_env_list:
++            close = get_env_attr(env, "close")
++            if callable(close):
++                close()
++
+     def evaluate(self, input_channel: Channel, rollout_channel: Channel):
+         eval_metrics = defaultdict(list)
+ 

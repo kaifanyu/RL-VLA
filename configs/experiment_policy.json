@@ -1,0 +1,7 @@
+{
+  "updated": "2026-10-28",
+  "reason": "User requested baseline, RLDT and Flow-SDE only; spatial work paused.",
+  "allowed_methods": ["baseline", "rldt", "flow_sde"],
+  "paused_suites": ["libero_spatial"],
+  "active_campaign": "runs/object_adaptation_20261028"
+}

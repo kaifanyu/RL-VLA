@@ -1,0 +1,12 @@
+{
+  "repo_id": "robocasa/robocasa365_checkpoints",
+  "revision": "c484448aba1a9b60a04c9b0ca117241518ea69f3",
+  "path": "pi05_pretrain_human300/multitask_learning/75000/assets/norm_stats.json",
+  "url": "https://huggingface.co/robocasa/robocasa365_checkpoints/resolve/c484448aba1a9b60a04c9b0ca117241518ea69f3/pi05_pretrain_human300/multitask_learning/75000/assets/norm_stats.json",
+  "sha256": "4aed1af411bd0e0f49d2b0e6d6832b11b8682917231a07173fbc30fd493bbdee",
+  "usage": "Normalization statistics only. No fine-tuned policy weights downloaded. Raw pi05_base initialization requested.",
+  "sources": [
+    "https://github.com/robocasa-benchmark/openpi",
+    "https://github.com/robocasa-benchmark/leaderboard/blob/main/submissions_md/pi05_2026-04-02.md"
+  ]
+}

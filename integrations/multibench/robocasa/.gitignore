@@ -1,0 +1,6 @@
+__pycache__/
+*.egg-info/
+assets/downloads/*.zip
+assets/downloads/*.partial
+assets/numba_cache/
+evidence/

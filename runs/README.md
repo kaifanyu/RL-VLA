@@ -1,24 +1,42 @@
-Use a new directory per experiment. Bulk outputs are ignored by Git; only this
-README is published. The filename `validation` alone does not establish whether
-a run used a real VLA: inspect its manifest and the [verification record](../docs/verification.md).
+# Runs
 
-| Output | Contents |
-|---|---|
-| SAC / PPO / FlashSAC training | Manifest, metrics, periodic `.pt` checkpoints, and final checkpoint/summary when completed |
-| RLDT training | Config, manifest, iteration metrics, `expert.npz` and `learner.npz`, final counters |
-| DICE training | Metadata, episode metrics, `latest.pt` and `final.pt`; no exact replay/RNG resume |
-| Generic residual evaluation | JSON report with per-episode outcomes and confidence interval |
-| Baseline / robustness evaluation | `summary.json`, `protocol.json`, `episodes/`, telemetry, logs and selected videos |
+Raw runs are local and excluded from Git. Active GRASP artifacts remain in
+`/mnt/projects/jg/kaifany/RL-VLA/runs/`; the clean publishing checkout contains
+source and documentation only. [Compact results](../docs/results/README.md)
+are retained in Git.
 
-Existing local reference results:
+## Run index
 
-- `evaluation/pi05_libero_spatial_20260928/`: completed 495/500 Spatial baseline.
-- `evaluation/pi05_libero_robustness_20260929/`: ongoing 20,030-case Plus/PRO queue.
-- `rldt_pi05_k8_validation/`: real expert optimizer/save smoke; not a learning result.
-- `dice_pi05_smoke_01/`: two-episode collection/update smoke; not a benchmark score.
+| Label | Local directory | Purpose |
+|---|---|---|
+| LIBERO objects | `object_adaptation_20261028/` | Current Object2 and Object1-hard campaign |
+| Multi-benchmark | `multibench_20261028/` | Current RoboTwin, RoboCasa, and ManiSkill campaign |
+| GPU allocation | `gpu_allocation_1470624/` | Active allocation metadata and shared lock |
+| Setup | `setup/` | Environment checks and readiness evidence |
+| PRO comparison | `pro_multimethod_20261027/` | Earlier experiments and required Flow-SDE readiness evidence |
+| Spatial0 | `pro_spatial0_rldt_20261026/` | Completed spatial adaptation experiment |
+| Initial RLDT | `rldt_pi05_libero_1470466/` | Completed original-task experiment |
+| Baseline screens | `benchmark_screen*_20261027/` | Task-selection evidence |
+| Multi-object pilots | `multiobject*_20261027/` | Completed layout pilots |
+| Analysis | `analysis_20261027/`, `analysis_20261028/` | Plots, comparisons, and failure reviews |
+| Cleanup archive | `archive/cleanup_20261029/` | Compact diagnostics from removed failed attempts |
 
-For before/after policy comparisons, preserve the base checkpoint fingerprint,
-task definitions, state/seed schedule and control settings. Keep train and
-evaluation states separate. Full RLDT training snapshots are about 8.1 GiB each;
-set a retention budget before launching multiple runs.
+## Reading a run
 
+- `status.json`: current stage and completion/failure state.
+- `protocol.json` and `input_contract.json`: fixed task, split, and source identity.
+- `training/metrics*.jsonl`: training progress; not held-out performance.
+- `baseline_validation.json` and `validation_*.json`: checkpoint selection evidence.
+- `selection.json`: selected checkpoint and rule.
+- `baseline_test.json` and `selected_test.json`: final paired comparison.
+- `baseline_source.json` and `selected_source.json`: original-task retention.
+
+## Retention
+
+Keep active runs, unique results (including failures), source snapshots, protocols,
+seeds, selected policies, and referenced readiness evidence. Remove abandoned
+setup retries and redundant smoke-test weights after preserving their compact
+diagnostics. Do not rename active run paths: launchers and contracts reference them.
+
+Use `<task>_<method>_<YYYYMMDD>` for new standalone runs. Campaign directories
+may group tasks and methods under one dated root.

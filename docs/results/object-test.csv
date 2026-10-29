@@ -1,0 +1,9 @@
+task,method,split,policy,iteration,successes,episodes,mean_controller_steps,source,source_sha256,captured_at
+object_2,flow_sde,test,baseline,0,0,50,280.0,runs/object_adaptation_20261028/methods/flow_sde/object_2/baseline_test.episodes.jsonl,4355159cdb2afd5eebbf121184c273f14a272d882a00d59130a02666e259bfb6,2026-10-29T14:44:05-04:00
+object_2,flow_sde,test,selected,25,0,50,280.0,runs/object_adaptation_20261028/methods/flow_sde/object_2/selected_test.episodes.jsonl,436f2d6ae9f23b6b998eff601ae30125e413ff6c0b1b449999efae8f80f72972,2026-10-29T14:44:05-04:00
+object_2,flow_sde,original,baseline,0,49,50,129.26,runs/object_adaptation_20261028/methods/flow_sde/object_2/baseline_source.episodes.jsonl,cd0953f00200c9679ca1a39755bb500f5fc68b841d914111152a2cedda10683d,2026-10-29T14:44:05-04:00
+object_2,flow_sde,original,selected,25,49,50,124.14,runs/object_adaptation_20261028/methods/flow_sde/object_2/selected_source.episodes.jsonl,86f5df10a212a16b63c5d736c7c71f917906eefaa5bc233ddc9edbd3bc7ec343,2026-10-29T14:44:05-04:00
+object_2,rldt,test,baseline,0,0,50,280.0,runs/object_adaptation_20261028/methods/rldt/object_2/baseline_test.episodes.jsonl,4de7b4aef08173c7f370e1a39f372d6ea66cd6e58f9073909bcec364dd3d3743,2026-10-29T14:44:05-04:00
+object_2,rldt,test,selected,25,0,50,280.0,runs/object_adaptation_20261028/methods/rldt/object_2/selected_test.episodes.jsonl,ba9a4a3e4eb6e5240a0dbfd07ca12ba7f119ebb559b2b6390cb1fc0114df6c08,2026-10-29T14:44:05-04:00
+object_2,rldt,original,baseline,0,49,50,128.2,runs/object_adaptation_20261028/methods/rldt/object_2/baseline_source.episodes.jsonl,3cb6374267f56ea6d4e96ef282a732bfa510d78c2f26160cdb9563f9fb74c098,2026-10-29T14:44:05-04:00
+object_2,rldt,original,selected,25,48,50,126.68,runs/object_adaptation_20261028/methods/rldt/object_2/selected_source.episodes.jsonl,b08511e0e7e71cdd7cf54976f9c64def986edb73ba589d7fd2873b157039eec3,2026-10-29T14:44:05-04:00
