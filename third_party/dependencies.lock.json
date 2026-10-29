@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "repositories": [
+    {
+      "name": "openpi",
+      "path": "third_party/openpi",
+      "url": "https://github.com/Physical-Intelligence/openpi.git",
+      "commit": "215abfb217dbac7d5f1273282331b9b1866c0479"
+    },
+    {
+      "name": "libero_plus",
+      "path": "third_party/libero_plus",
+      "url": "https://github.com/sylvestf/LIBERO-plus.git",
+      "commit": "4976dc30028e805ff8094b55501d532c48fec182"
+    },
+    {
+      "name": "libero_pro",
+      "path": "third_party/libero_pro",
+      "url": "https://github.com/Zxy-MLlab/LIBERO-PRO.git",
+      "commit": "eafdb809426b13153aa1e4c42d6601844217dfec"
+    },
+    {
+      "name": "rlinf",
+      "path": "third_party/rlinf",
+      "url": "https://github.com/RLinf/RLinf.git",
+      "commit": "0505431899574619da86f551bad70b71e0ea2177",
+      "patch": "third_party/patches/rlinf.patch"
+    },
+    {
+      "name": "rlinf_openpi",
+      "path": "third_party/rlinf_openpi",
+      "url": "https://github.com/RLinf/openpi.git",
+      "commit": "c5dc4b9296a1a4739bf52828f28a579f12dce763"
+    },
+    {
+      "name": "robotwin",
+      "path": "third_party/robotwin",
+      "url": "https://github.com/RoboTwin-Platform/RoboTwin.git",
+      "commit": "dca9ec682688821c42944eacd7f5dd9bfb15396f"
+    },
+    {
+      "name": "robocasa365",
+      "path": "third_party/robocasa365",
+      "url": "https://github.com/robocasa/robocasa.git",
+      "commit": "dc73a8ce18e4b8947e8df2ae2958245ca823f3b4"
+    },
+    {
+      "name": "robosuite",
+      "path": "third_party/robocasa365/dependencies/robosuite",
+      "url": "https://github.com/ARISE-Initiative/robosuite.git",
+      "commit": "5ce6643f3092639d08f7b0f90ed1c6a84f50552c"
+    },
+    {
+      "name": "openpi_reference",
+      "path": "third_party/robocasa365/dependencies/openpi_reference",
+      "url": "https://github.com/robocasa-benchmark/openpi.git",
+      "commit": "5a6beda9ff99da30b4e1b59320f6a32971d7c397"
+    },
+    {
+      "name": "maniskill3",
+      "path": "third_party/maniskill3",
+      "url": "https://github.com/haosulab/ManiSkill.git",
+      "commit": "33967b9e3ead1f841eec57cc9f31d0d8b8cf0907"
+    },
+    {
+      "name": "FlashSAC",
+      "path": "third_party/FlashSAC",
+      "url": "https://github.com/Holiday-Robot/FlashSAC.git",
+      "commit": "87edc9061150ae9e962dd84e6544e27a1554b3ab",
+      "optional": true
+    },
+    {
+      "name": "dice_rl_upstream",
+      "path": "third_party/dice_rl_upstream",
+      "url": "https://github.com/zhanyisun/dice-rl.git",
+      "commit": "98d936e52523878f0172e606ea32403176497100",
+      "optional": true
+    }
+  ]
+}

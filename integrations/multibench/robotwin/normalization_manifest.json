@@ -1,0 +1,238 @@
+{
+  "dataset": "TianxingChen/RoboTwin2.0",
+  "revision": "3dc3b798668feb99ac61cc9086d84cbcc3d79186",
+  "file": "dataset/handover_block/demo_clean.zip",
+  "archive_sha256": "9959f4daab727215a06bad6b44821bfdd38b9c3ba9d6a4eca074fe58f4d920e3",
+  "embodiment": "aloha-agilex",
+  "demonstrations": 50,
+  "use": "normalization calibration only; no SFT or demonstration training",
+  "policy_transform_source": "/mnt/projects/jg/kaifany/RL-VLA/third_party/rlinf/rlinf/models/embodiment/openpi/policies/aloha_policy.py",
+  "policy_transform_sha256": "a1165b3d987fd021c67ce8722a2f86a150e3ebaf1340750ec6819bbe619c16c3",
+  "adapt_to_pi": true,
+  "action_horizon": 50,
+  "action_chunk_padding": "repeat final action at episode boundary",
+  "joint_delta_mask": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    false
+  ],
+  "grippers": "absolute; official Aloha encode/decode",
+  "joint_order": "left six, left gripper, right six, right gripper",
+  "quantiles": "exact numpy q01/q99 over all training frames and padded horizon actions",
+  "action_roundtrip_max_error": 1.1102230246251565e-16,
+  "norm_stats_sha256": "45e04d9c7589ad3fdadb44555ebaa47949dd44133752329d4d877f51606d96a0",
+  "demonstration_seeds": "0 1 2 3 4 5 6 7 8 10 11 12 13 14 15 16 17 19 20 21 22 23 24 25 28 29 31 32 33 200 35 36 37 38 39 40 41 42 43 45 46 48 49 50 51 52 53 54 55 56 ",
+  "episodes": [
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000000.hdf5",
+      "frames": 294
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000001.hdf5",
+      "frames": 276
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000002.hdf5",
+      "frames": 281
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000003.hdf5",
+      "frames": 277
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000004.hdf5",
+      "frames": 286
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000005.hdf5",
+      "frames": 279
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000006.hdf5",
+      "frames": 279
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000007.hdf5",
+      "frames": 276
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000008.hdf5",
+      "frames": 285
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000009.hdf5",
+      "frames": 279
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000010.hdf5",
+      "frames": 290
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000011.hdf5",
+      "frames": 274
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000012.hdf5",
+      "frames": 293
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000013.hdf5",
+      "frames": 277
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000014.hdf5",
+      "frames": 286
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000015.hdf5",
+      "frames": 280
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000016.hdf5",
+      "frames": 288
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000017.hdf5",
+      "frames": 277
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000018.hdf5",
+      "frames": 288
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000019.hdf5",
+      "frames": 274
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000020.hdf5",
+      "frames": 272
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000021.hdf5",
+      "frames": 292
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000022.hdf5",
+      "frames": 281
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000023.hdf5",
+      "frames": 282
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000024.hdf5",
+      "frames": 273
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000025.hdf5",
+      "frames": 274
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000026.hdf5",
+      "frames": 278
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000027.hdf5",
+      "frames": 275
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000028.hdf5",
+      "frames": 278
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000029.hdf5",
+      "frames": 287
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000030.hdf5",
+      "frames": 289
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000031.hdf5",
+      "frames": 289
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000032.hdf5",
+      "frames": 285
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000033.hdf5",
+      "frames": 277
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000034.hdf5",
+      "frames": 287
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000035.hdf5",
+      "frames": 287
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000036.hdf5",
+      "frames": 277
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000037.hdf5",
+      "frames": 277
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000038.hdf5",
+      "frames": 276
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000039.hdf5",
+      "frames": 300
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000040.hdf5",
+      "frames": 278
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000041.hdf5",
+      "frames": 277
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000042.hdf5",
+      "frames": 283
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000043.hdf5",
+      "frames": 278
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000044.hdf5",
+      "frames": 275
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000045.hdf5",
+      "frames": 284
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000046.hdf5",
+      "frames": 276
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000047.hdf5",
+      "frames": 280
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000048.hdf5",
+      "frames": 276
+    },
+    {
+      "archive_member": "handover_block/aloha_agilex/data/episode_0000049.hdf5",
+      "frames": 275
+    }
+  ]
+}

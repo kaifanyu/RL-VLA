@@ -4,6 +4,8 @@ import hashlib
 import json
 from pathlib import Path
 
+import numpy as np
+
 from rl_vla.envs.libero import LiberoEnv
 from rl_vla.robustness import load_states
 
@@ -46,16 +48,32 @@ class SplitLiberoEnv(LiberoEnv):
         return observation, info | {"experiment_split": self.split}
 
 
+def validate_splits(task, version):
+    """Reject overlap, duplicate IDs, or missing states before creating MuJoCo."""
+    names = ("train", "validation", "test") if version == 2 else ("train", "heldout")
+    seen = set()
+    for name in names:
+        ids = task[f"{name}_state_ids"]
+        if not ids or len(ids) != len(set(ids)) or any(type(i) is not int for i in ids):
+            raise ValueError(f"Invalid {name} state IDs")
+        if seen.intersection(ids):
+            raise ValueError("Training and evaluation state IDs overlap")
+        seen.update(ids)
+    if seen != set(range(task["pro_state_count"])):
+        raise ValueError("Experiment splits do not cover the PRO states")
+
+
 def make_env(*, protocol, task_key, split):
-    if split not in {"train", "heldout", "source"}:
-        raise ValueError(f"Unknown experiment split: {split}")
     plan = json.loads(Path(protocol).read_text())
+    version = plan.get("version", 1)
+    if version not in (1, 2):
+        raise ValueError(f"Unsupported experiment protocol version: {version}")
+    allowed = {"train", "validation", "test", "source"} if version == 2 else {
+        "train", "heldout", "source"}
+    if split not in allowed:
+        raise ValueError(f"Unknown experiment split: {split}")
     task = plan["tasks"][task_key]
-    train_ids, heldout_ids = task["train_state_ids"], task["heldout_state_ids"]
-    if set(train_ids) & set(heldout_ids):
-        raise ValueError("Training and held-out state IDs overlap")
-    if set(train_ids) | set(heldout_ids) != set(range(task["pro_state_count"])):
-        raise ValueError("Training and held-out splits do not cover the PRO states")
+    validate_splits(task, version)
 
     import libero.libero as libero_package
     from libero.libero.envs import OffScreenRenderEnv
@@ -66,6 +84,10 @@ def make_env(*, protocol, task_key, split):
     condition = task["source" if split == "source" else "pro"]
     bddl = checked_file(condition["bddl"])
     states = load_states(checked_file(condition["states"]))
+    if version == 2 and split != "source" and (
+        len(states) != task["pro_state_count"] or len(np.unique(states, axis=0)) != len(states)
+    ):
+        raise ValueError("PRO states are missing or duplicated")
     state_ids = task[f"{split}_state_ids"]
     backend = OffScreenRenderEnv(
         bddl_file_name=str(bddl), camera_heights=256, camera_widths=256,

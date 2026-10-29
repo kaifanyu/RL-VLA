@@ -5,3 +5,8 @@ Dockerfile text eol=lf
 *.yml text eol=lf
 docker/*.in text eol=lf
 docker/*.lock text eol=lf
+*.patch -whitespace
+# Preserve upstream fixtures and the frozen runtime snapshot byte for byte.
+tests/fixtures/rlinf/** -whitespace
+integrations/multibench/core/rl_vla/** whitespace=-blank-at-eof
+*.csv text eol=lf

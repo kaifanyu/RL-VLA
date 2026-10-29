@@ -1,0 +1,12 @@
+task,method,iteration,successes,episodes,success_rate,training_controller_steps,training_decisions,training_seconds,checkpoint_evaluation_seconds,mean_evaluation_controller_steps,report,captured_at
+object_2,rldt,0,0,50,0.0,0,0,0,,280.0,runs/object_adaptation_20261028/methods/rldt/object_2/baseline_validation.json,2026-10-29T14:44:05-04:00
+object_2,rldt,25,0,50,0.0,4000,800,940.1031294222921,2537.031241932884,280.0,runs/object_adaptation_20261028/methods/rldt/object_2/validation_000025.json,2026-10-29T14:44:05-04:00
+object_2,rldt,50,0,50,0.0,8000,1600,2063.758435091004,3633.6384973190725,280.0,runs/object_adaptation_20261028/methods/rldt/object_2/validation_000050.json,2026-10-29T14:44:05-04:00
+object_2,rldt,100,0,50,0.0,16000,3200,4281.693006724119,3234.38169949688,280.0,runs/object_adaptation_20261028/methods/rldt/object_2/validation_000100.json,2026-10-29T14:44:05-04:00
+object_2,flow_sde,0,0,50,0.0,0,0,0,,280.0,runs/object_adaptation_20261028/methods/flow_sde/object_2/baseline_validation.json,2026-10-29T14:44:05-04:00
+object_2,flow_sde,25,0,50,0.0,4000,800,1037.2102166563272,2701.305187910795,280.0,runs/object_adaptation_20261028/methods/flow_sde/object_2/validation_000025.json,2026-10-29T14:44:05-04:00
+object_2,flow_sde,50,0,50,0.0,8000,1600,2417.7818564455956,3128.069505546242,280.0,runs/object_adaptation_20261028/methods/flow_sde/object_2/validation_000050.json,2026-10-29T14:44:05-04:00
+object_2,flow_sde,100,0,50,0.0,16000,3200,4396.8026862517,2516.367124982178,280.0,runs/object_adaptation_20261028/methods/flow_sde/object_2/validation_000100.json,2026-10-29T14:44:05-04:00
+object_1_hard,rldt,0,38,50,0.76,0,0,0,,193.18,runs/object_adaptation_20261028/methods/rldt/object_1_hard/baseline_validation.json,2026-10-29T14:44:05-04:00
+object_1_hard,rldt,25,44,50,0.88,3962,800,728.4361526612192,1632.616975955665,168.16,runs/object_adaptation_20261028/methods/rldt/object_1_hard/validation_000025.json,2026-10-29T14:44:05-04:00
+object_1_hard,rldt,50,32,50,0.64,7928,1600,1658.1753441113979,3184.65303388983,226.0,runs/object_adaptation_20261028/methods/rldt/object_1_hard/validation_000050.json,2026-10-29T14:44:05-04:00

@@ -159,6 +159,41 @@ def _assert_same_state(left, right):
         np.testing.assert_array_equal(a, b)
 
 
+def test_evaluation_video_does_not_change_policy_outcomes(tmp_path, monkeypatch):
+    pytest.importorskip("imageio_ffmpeg")
+    from rl_vla import rldt
+
+    original_factory = rldt.make_primitive_env
+
+    class Cameras:
+        def __init__(self, env):
+            self.env = env
+
+        def __getattr__(self, name):
+            return getattr(self.env, name)
+
+        def observation(self, raw):
+            return raw | {"openpi": {
+                "observation/image": np.zeros((16, 16, 3), dtype=np.uint8),
+                "observation/wrist_image": np.full((16, 16, 3), 255, dtype=np.uint8)}}
+
+        def reset(self, **kwargs):
+            raw, info = self.env.reset(**kwargs)
+            return self.observation(raw), info
+
+        def step(self, action):
+            raw, reward, terminated, truncated, info = self.env.step(action)
+            return self.observation(raw), reward, terminated, truncated, info
+
+    monkeypatch.setattr(rldt, "make_primitive_env", lambda config: Cameras(original_factory(config)))
+    config = _tiny_config()
+    before = evaluate(config, tmp_path / "plain.json", episodes=1)
+    after = evaluate(config, tmp_path / "recorded.json", episodes=1, record_episodes=1)
+    for key in ("seed", "reset", "success", "return", "primitive_steps"):
+        assert before["episodes"][0][key] == after["episodes"][0][key]
+    assert Path(after["episodes"][0]["video"]).stat().st_size > 0
+
+
 @pytest.mark.parametrize("clip_bootstrap", [False, True])
 def test_critic_targets_average_particlewise_twin_minimum_and_polyak(clip_bootstrap):
     config = _tiny_config()
@@ -210,6 +245,12 @@ def test_toy_train_updates_saves_restores_and_evaluates(tmp_path):
     assert metrics[1]["metrics"]["actor_update_norm"] > 0.0
     assert metrics[1]["metrics"]["actor_grad_norm"] > 0.0
     assert all(np.isfinite(value) for row in metrics for value in row["metrics"].values())
+    episodes = [json.loads(line) for line in (tmp_path / "run/episodes.jsonl").read_text().splitlines()]
+    assert len(episodes) == summary["episodes"]
+    assert sum(e["success"] for e in episodes) == summary["successes"]
+    assert sum(e["primitive_steps"] for e in episodes) <= summary["primitive_steps"]
+    assert [e["seed"] for e in episodes] == list(range(
+        config["train"]["seed"], config["train"]["seed"] + len(episodes)))
 
     flow = ToyFlow(config["policy"])
     loaded = flow.load_params(checkpoint)
@@ -253,6 +294,33 @@ def test_toy_sampling_detaches_trajectory_but_velocity_remains_trainable():
         params, context, jnp.ones((1, 2, 2)), jnp.ones((1,))
     ).sum())(flow.params)
     assert any(np.any(value != 0.0) for value in jax.tree.leaves(gradient))
+
+
+def test_checkpoint_validation_preserves_continuous_optimizer_replay_and_rng(tmp_path, monkeypatch):
+    from rl_vla import checkpoint_validation
+
+    config = _tiny_config()
+    reference = train(config, str(tmp_path / "reference"))
+    checks = []
+
+    def pause(training, checkpoint, iteration, counters, method):
+        assert (checkpoint / "learner.npz").exists()
+        assert method == "rldt"
+        checks.append((iteration, counters["decisions"]))
+        return 0.125
+
+    monkeypatch.setattr(checkpoint_validation, "run_checkpoint_validation", pause)
+    paused = train(config, str(tmp_path / "paused"))
+    assert checks == [(1, 4), (2, 8)]
+    assert paused["checkpoint_validation_seconds"] == .25
+    assert paused["wall_elapsed_seconds"] - paused["elapsed_seconds"] == pytest.approx(.25, abs=.001)
+    for key in ("decisions", "primitive_steps", "successes", "actor_updates", "critic_updates"):
+        assert paused[key] == reference[key]
+    for filename in ("actor.npz", "learner.npz"):
+        with np.load(Path(reference["checkpoint"]) / filename) as left, np.load(Path(paused["checkpoint"]) / filename) as right:
+            assert left.files == right.files
+            for key in left.files:
+                np.testing.assert_array_equal(left[key], right[key])
 
 
 def test_process_environment_matches_local_environment_and_closes():

@@ -1,0 +1,73 @@
+{
+  "task_id": "robocasa/PickPlaceCounterToCabinet",
+  "version": "1.0.1",
+  "robot": "PandaOmron",
+  "controller": "HYBRID_MOBILE_BASE / OSC_POSE",
+  "control_frequency_hz": 20,
+  "max_episode_steps": 750,
+  "simulator_timestep_seconds": 0.002,
+  "action_dimension": 12,
+  "state_dimension": 16,
+  "action_order": [
+    "dx",
+    "dy",
+    "dz",
+    "drotation_x",
+    "drotation_y",
+    "drotation_z",
+    "gripper",
+    "base_x",
+    "base_y",
+    "base_yaw",
+    "torso",
+    "control_mode"
+  ],
+  "action_bounds": [
+    -1,
+    1
+  ],
+  "arm_action_frame": "base",
+  "arm_translation_limit_meters": 0.05,
+  "arm_rotation_limit_radians": 0.5,
+  "discrete_action_threshold": 0.5,
+  "state_order": [
+    "end_effector_position_relative[3]",
+    "end_effector_quaternion_relative_xyzw[4]",
+    "base_position[3]",
+    "base_quaternion_xyzw[4]",
+    "gripper_qpos[2]"
+  ],
+  "images": {
+    "observation/image": "robot0_agentview_left",
+    "observation/wrist_image": "robot0_eye_in_hand",
+    "observation/right_wrist_image": "robot0_agentview_right"
+  },
+  "image_orientation": "Native RoboCasa Gym wrapper flips vertically once; no extra flip in adapter.",
+  "prompt_template": "Pick the {sampled object language} from the counter and place it in the cabinet.",
+  "success": "Native obj_inside_of(env, obj, cabinet) AND gripper_obj_far(env)",
+  "initialization": "raw pi05_base weights requested; no RoboCasa SFT weights",
+  "normalization": "Official RoboCasa pi05_pretrain_human300 mean/std stats, no quantiles",
+  "sources": {
+    "robocasa": {
+      "url": "https://github.com/robocasa/robocasa",
+      "commit": "dc73a8ce18e4b8947e8df2ae2958245ca823f3b4"
+    },
+    "robosuite": {
+      "url": "https://github.com/ARISE-Initiative/robosuite",
+      "commit": "5ce6643f3092639d08f7b0f90ed1c6a84f50552c"
+    },
+    "openpi_reference": {
+      "url": "https://github.com/robocasa-benchmark/openpi",
+      "commit": "5a6beda9ff99da30b4e1b59320f6a32971d7c397"
+    }
+  },
+  "native_camera_resolution": [
+    256,
+    256
+  ],
+  "policy_camera_resolution": [
+    224,
+    224
+  ],
+  "image_resize": "Official openpi_client.image_tools.resize_with_pad, PIL bilinear"
+}

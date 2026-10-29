@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from test_libero_adapter import FakeLibero
 
-from rl_vla.envs.libero_pro import SplitLiberoEnv, checked_file
+from rl_vla.envs.libero_pro import SplitLiberoEnv, checked_file, validate_splits
 
 
 def make_split(split, ids):
@@ -42,3 +42,25 @@ def test_asset_changes_are_detected(tmp_path):
     path.write_bytes(b"modified")
     with pytest.raises(ValueError, match="changed"):
         checked_file(record)
+
+
+@pytest.mark.parametrize("split", ["validation", "test", "source"])
+def test_validation_and_test_enumerate_only_their_own_states(split):
+    env = make_split(split, [4, 8])
+    assert [env.reset(seed=i)[1]["initial_state_id"] for i in range(2)] == [4, 8]
+    with pytest.raises(ValueError, match="more episodes"):
+        env.reset(seed=2)
+
+
+def test_three_way_split_rejects_overlap_duplicates_and_missing_states():
+    task = {"pro_state_count": 6, "train_state_ids": [0, 1],
+            "validation_state_ids": [2, 3], "test_state_ids": [4, 5]}
+    validate_splits(task, 2)
+    for invalid in ([3, 4, 5], [4, 4, 5], [4], [-1, 4, 5], [4, 5.0]):
+        with pytest.raises(ValueError):
+            validate_splits(task | {"test_state_ids": invalid}, 2)
+
+
+def test_previous_two_way_protocol_still_works():
+    validate_splits({"pro_state_count": 3, "train_state_ids": [0, 1],
+                     "heldout_state_ids": [2]}, 1)

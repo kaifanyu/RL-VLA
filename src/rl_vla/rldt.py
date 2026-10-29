@@ -17,6 +17,7 @@ import optax
 from rl_vla.rldt_env import make_primitive_env
 from rl_vla.rldt_math import actor_loss, svgd_field
 from rl_vla.rldt_replay import TrajectoryReplay, lambda_returns
+from rl_vla.trajectory_recording import TrajectoryRecorder
 
 
 def write_json(path, value):
@@ -66,6 +67,8 @@ def load_config(path):
         raise ValueError("reference must be moving or pretrained")
     if config["train"]["replay_capacity"] < config["train"]["collect_decisions"]:
         raise ValueError("replay_capacity must fit one collection window")
+    if not isinstance(config.get("recording", {}).get("enabled", False), bool):
+        raise TypeError("recording.enabled must be a boolean")
     return config
 
 
@@ -285,19 +288,22 @@ class Learner:
          self.actor_opt, self.q_opt, self.key) = jax.tree.unflatten(tree, leaves)
 
 
-def execute_chunk(env, actions, gamma):
+def execute_chunk(env, actions, gamma, *, record_step=None):
     actions = np.asarray(actions, np.float32)
     if not np.isfinite(actions).all():
         raise FloatingPointError("Nonfinite policy actions")
     reward, raw_return = 0., 0.
     for i, action in enumerate(actions):
-        raw, r, terminated, truncated, info = env.step(np.clip(action, env.low, env.high))
+        executed_action = np.clip(action, env.low, env.high)
+        raw, r, terminated, truncated, info = env.step(executed_action)
         if not np.isfinite(r):
             raise FloatingPointError("Nonfinite environment reward")
         if "final_observation" in info or "final_obs" in info:
             raise ValueError("Auto-reset environments are unsupported")
         reward += gamma**i * r
         raw_return += r
+        if record_step is not None:
+            record_step(executed_action, raw, r, terminated, truncated, info)
         if terminated or truncated:
             break
     count = i + 1
@@ -318,10 +324,14 @@ def train(config, output, init_from=None):
     print("Starting primitive environment...", flush=True)
     env = make_primitive_env(config["env"])
     start = time.monotonic()
+    validation_seconds = 0.0
     counters = {"iterations": 0, "decisions": 0, "primitive_steps": 0,
                 "episodes": 0, "successes": 0, "actor_updates": 0, "critic_updates": 0}
+    recorder = None
+    recording_reason = "interrupted"
     try:
-        raw, _ = env.reset(seed=seed)
+        raw, reset_info = env.reset(seed=seed)
+        episode_steps, episode_return = 0, 0.
         print("Encoding initial observation and initializing optimizers...", flush=True)
         context = flow.prepare([raw])
         learner = Learner(flow, context["features"].shape[-1], config)
@@ -344,18 +354,40 @@ def train(config, output, init_from=None):
         except (OSError, subprocess.CalledProcessError):
             manifest["openpi_commit"] = None
         write_json(out / "manifest.json", manifest)
+        if config.get("recording", {}).get("enabled", False):
+            recorder = TrajectoryRecorder(out / "trajectories", manifest | {
+                "phase": "train", "behavior_policy": "Online learner; exact actor update "
+                "count and PRNG sampling key are recorded at each decision.",
+            })
         replay = TrajectoryReplay(int(settings["replay_capacity"]), seed)
         rng = np.random.default_rng(seed)
-        with (out / "metrics.jsonl").open("w") as log:
+        with (out / "metrics.jsonl").open("w") as log, (out / "episodes.jsonl").open("w") as episodes_log:
             for iteration in range(1, int(settings["iterations"]) + 1):
                 print(f"RLDT iteration {iteration}: collecting rollouts", flush=True)
                 fresh, segment = [], []
                 for _ in range(int(settings["collect_decisions"])):
+                    if recorder is not None and not recorder.active:
+                        recorder.start_episode(raw, {
+                            "episode": counters["episodes"] + 1,
+                            "seed": seed + counters["episodes"], "reset": reset_info,
+                        })
                     context = flow.prepare([raw])
-                    actions, _ = learner.sample(learner.params, context, learner.next_key())
-                    motor_actions = flow.decode(actions, [raw])[0, :learner.execute]
+                    sample_key = learner.next_key()
+                    actions, _ = learner.sample(learner.params, context, sample_key)
+                    decoded_actions = flow.decode(actions, [raw])[0]
+                    motor_actions = decoded_actions[:learner.execute]
+                    if recorder is not None:
+                        recorder.begin_chunk(raw, np.asarray(actions)[0], decoded_actions, {
+                            "iteration": iteration, "decision": counters["decisions"],
+                            "actor_updates": counters["actor_updates"],
+                            "sampling_key": np.asarray(sample_key),
+                            "planned_execute_steps": learner.execute,
+                        })
                     following, reward, terminated, truncated, info = execute_chunk(
-                        env, motor_actions, float(r["gamma"]))
+                        env, motor_actions, float(r["gamma"]),
+                        record_step=recorder.record_step if recorder is not None else None)
+                    if recorder is not None:
+                        recorder.end_chunk({"discounted_reward": reward, "info": info})
                     segment.append({"obs": raw, "next_obs": following,
                         "features": np.asarray(context["features"])[0],
                         "action": np.asarray(learner.active(actions))[0], "reward": reward,
@@ -363,13 +395,27 @@ def train(config, output, init_from=None):
                         "truncated": truncated, "executed_steps": info["executed_steps"]})
                     counters["decisions"] += 1
                     counters["primitive_steps"] += info["executed_steps"]
+                    episode_steps += info["executed_steps"]
+                    episode_return += info["raw_return"]
                     if terminated or truncated:
                         replay.add(segment)
                         fresh.append(segment)
                         segment = []
                         counters["episodes"] += 1
                         counters["successes"] += int(info.get("is_success", False))
-                        raw, _ = env.reset(seed=seed + counters["episodes"])
+                        episode_result = {
+                            "episode": counters["episodes"], "iteration": iteration,
+                            "seed": seed + counters["episodes"] - 1, "reset": reset_info,
+                            "success": bool(info.get("is_success", False)),
+                            "primitive_steps": episode_steps, "return": episode_return,
+                            "terminated": terminated, "truncated": truncated,
+                        }
+                        if recorder is not None:
+                            episode_result["trajectory"] = recorder.end_episode(episode_result)
+                        episodes_log.write(json.dumps(episode_result, allow_nan=False) + "\n")
+                        episodes_log.flush()
+                        episode_steps, episode_return = 0, 0.
+                        raw, reset_info = env.reset(seed=seed + counters["episodes"])
                     else:
                         raw = following
                 if segment:
@@ -401,23 +447,44 @@ def train(config, output, init_from=None):
                 if not all(np.isfinite(v) for v in metrics.values()):
                     raise FloatingPointError(f"Nonfinite training metrics: {metrics}")
                 counters["iterations"] = iteration
-                record = counters | {"elapsed_seconds": time.monotonic() - start,
+                record = counters | {"elapsed_seconds": time.monotonic() - start - validation_seconds,
+                                      "checkpoint_validation_seconds": validation_seconds,
                                       "replay_decisions": replay.size, "metrics": metrics}
                 log.write(json.dumps(record, allow_nan=False) + "\n")
                 log.flush()
                 print(json.dumps(record, allow_nan=False), flush=True)
                 if iteration % int(settings["save_every"]) == 0:
                     learner.save(out / f"iteration_{iteration:06d}")
+                    from rl_vla.checkpoint_validation import run_checkpoint_validation
+
+                    validation_seconds += run_checkpoint_validation(
+                        out, out / f"iteration_{iteration:06d}", iteration, record, "rldt")
         learner.save(out / "final")
-        summary = counters | {"elapsed_seconds": time.monotonic() - start,
+        summary = counters | {"elapsed_seconds": time.monotonic() - start - validation_seconds,
+                              "wall_elapsed_seconds": time.monotonic() - start,
+                              "checkpoint_validation_seconds": validation_seconds,
                               "checkpoint": str(out / "final")}
+        if recorder is not None:
+            summary["trajectories"] = str(recorder.directory)
         write_json(out / "summary.json", summary)
+        recording_reason = "training_budget_exhausted"
         return summary
     finally:
-        env.close()
+        try:
+            if recorder is not None:
+                recorder.close(reason=recording_reason)
+        finally:
+            env.close()
 
 
-def evaluate(config, output, checkpoint=None, episodes=5, seed=100000):
+def evaluation_frame(raw):
+    """Side-by-side policy camera inputs, without another simulator render."""
+    cameras = raw["openpi"]
+    return np.concatenate([cameras["observation/image"],
+                           cameras["observation/wrist_image"]], axis=1)
+
+
+def evaluate(config, output, checkpoint=None, episodes=5, seed=100000, record_episodes=0):
     path = Path(output)
     if path.exists() or path.with_suffix(".episodes.jsonl").exists():
         raise FileExistsError(path)
@@ -431,18 +498,41 @@ def evaluate(config, output, checkpoint=None, episodes=5, seed=100000):
     results = []
     path.parent.mkdir(parents=True, exist_ok=True)
     episode_log = path.with_suffix(".episodes.jsonl").open("x")
+    recorder = None
+    recording_reason = "interrupted"
     try:
+        if config.get("recording", {}).get("enabled", False):
+            recorder = TrajectoryRecorder(path.with_suffix(".trajectories"), {
+                "phase": "evaluation", "config": config, "checkpoint": checkpoint,
+                "policy_metadata": getattr(flow, "metadata", {}),
+                "seed": seed, "episodes": episodes,
+            })
         for episode in range(episodes):
             print(f"Evaluation episode {episode + 1}/{episodes}: resetting environment", flush=True)
             # Match each episode's noise independently of earlier episode lengths.
             key = jax.random.PRNGKey(seed + episode)
             raw, reset_info = env.reset(seed=seed + episode)
+            if recorder is not None:
+                recorder.start_episode(raw, {"seed": seed + episode, "reset": reset_info})
+            frames = [evaluation_frame(raw)] if episode < record_episodes else []
             steps, total = 0, 0.
             for decision in range(10000):
                 key, subkey = jax.random.split(key)
                 actions = sample(params, flow.prepare([raw]), subkey, flow.frozen)
-                motor = flow.decode(actions, [raw])[0, :int(r["execute_steps"])]
-                raw, _, terminated, truncated, info = execute_chunk(env, motor, float(r["gamma"]))
+                decoded_actions = flow.decode(actions, [raw])[0]
+                motor = decoded_actions[:int(r["execute_steps"])]
+                if recorder is not None:
+                    recorder.begin_chunk(raw, np.asarray(actions)[0], decoded_actions, {
+                        "decision": decision, "sampling_key": np.asarray(subkey),
+                        "planned_execute_steps": int(r["execute_steps"]),
+                    })
+                raw, reward, terminated, truncated, info = execute_chunk(
+                    env, motor, float(r["gamma"]),
+                    record_step=recorder.record_step if recorder is not None else None)
+                if recorder is not None:
+                    recorder.end_chunk({"discounted_reward": reward, "info": info})
+                if frames:
+                    frames.append(evaluation_frame(raw))
                 steps += info["executed_steps"]
                 total += info["raw_return"]
                 if terminated or truncated:
@@ -454,6 +544,20 @@ def evaluate(config, output, checkpoint=None, episodes=5, seed=100000):
             results.append({"seed": seed + episode, "reset": reset_info,
                             "success": bool(info.get("is_success", False)),
                             "return": total, "primitive_steps": steps})
+            if recorder is not None:
+                results[-1]["trajectory"] = recorder.end_episode(results[-1])
+            if frames:
+                import imageio.v3 as iio
+
+                video_dir = path.with_suffix(".videos")
+                video_dir.mkdir(exist_ok=True)
+                video = video_dir / f"episode_{episode + 1:03d}.mp4"
+                fps = 20 / int(r["execute_steps"])
+                iio.imwrite(video, np.stack(frames), fps=fps)
+                results[-1]["video"] = str(video)
+                results[-1]["video_note"] = (
+                    "External/wrist policy images at action-chunk boundaries; nominal 20Hz controller. "
+                    "Final shortened chunk may have a shorter true duration.")
             episode_log.write(json.dumps(results[-1], allow_nan=False) + "\n")
             episode_log.flush()
             print(json.dumps(results[-1]), flush=True)
@@ -461,10 +565,15 @@ def evaluate(config, output, checkpoint=None, episodes=5, seed=100000):
                   "success_rate": float(np.mean([e["success"] for e in results]))}
         path.parent.mkdir(parents=True, exist_ok=True)
         write_json(path, result)
+        recording_reason = "evaluation_complete"
         return result
     finally:
-        episode_log.close()
-        env.close()
+        try:
+            if recorder is not None:
+                recorder.close(reason=recording_reason)
+        finally:
+            episode_log.close()
+            env.close()
 
 
 def main():
@@ -478,6 +587,8 @@ def main():
     parser.add_argument("--particles", type=int, help="Override SVGD particle count (at least 2)")
     parser.add_argument("--episodes", type=int, default=5)
     parser.add_argument("--seed", type=int, default=100000)
+    parser.add_argument("--record-episodes", type=int, default=0,
+                        help="Save LIBERO policy-camera videos for the first N evaluation episodes")
     args = parser.parse_args()
     config = load_config(args.config)
     if args.smoke:
@@ -500,9 +611,10 @@ def main():
         if args.command == "train":
             result = train(config, args.output, args.init_from)
         elif args.command == "evaluate":
-            if args.episodes < 1:
-                parser.error("--episodes must be positive")
-            result = evaluate(config, args.output, args.checkpoint, args.episodes, args.seed)
+            if args.episodes < 1 or not 0 <= args.record_episodes <= args.episodes:
+                parser.error("--episodes must be positive; --record-episodes must be between 0 and it")
+            result = evaluate(config, args.output, args.checkpoint, args.episodes, args.seed,
+                              args.record_episodes)
         else:
             if not args.checkpoint or config["policy"]["kind"] != "pi05":
                 parser.error("export requires --checkpoint and policy.kind=pi05")
