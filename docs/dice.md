@@ -7,6 +7,8 @@ Official simulation source: https://github.com/zhanyisun/dice-rl
 Inspected revision: `98d936e52523878f0172e606ea32403176497100`.
 The MIT notice is retained in `docs/dice-upstream-LICENSE.txt`.
 
+For a fresh PrismaX GPU host, use the [portable pipeline guide](dice-prismax.md).
+
 ## What is implemented
 
 The existing JAX `pi05_libero` checkpoint remains frozen. A separate CPU PyTorch
@@ -158,24 +160,20 @@ DICE improves robustness. Use separate training and held-out evaluation cases.
 
 `final.pt` and `latest.pt` contain residual/critic weights and optimizer state,
 configuration, and prior fingerprint. `DICE.load_state_dict` restores the
-learner. This first runner does **not** provide exact experiment resume: it does
-not serialize replay, environment state, or RNG state. It also does not export
-a native finetuned OpenPI checkpoint. A future evaluation adapter must apply the
-residual and selection rule; the unchanged robustness launcher cannot consume
-these weights automatically.
+learner. The runner now writes `resume.pt` with replay, optimizer state and RNGs for
+episode-boundary continuation; see the portable guide. It does not save a
+partially collected episode or simulator state. It also does not export
+a native finetuned OpenPI checkpoint. The `evaluate` command applies the residual and selection rule. The separate
+robustness launcher cannot consume these weights automatically.
 
-## Shared-container resource controls
+## GPU host resource controls
 
-The wrapper limits affinity to CPUs 0–3, uses nice 10, one Torch/BLAS/OpenMP
-thread, disables GPU preallocation, and uses a separate JAX cache. The runner
-checks whole-GPU memory and temperature before loading and at each collection
-decision/update; it stops its own run at 48 GiB used, 78 degrees C, or less than
-8 GiB available RAM. Workspace usage is checked at startup and hourly; stop at
-190 GB apparent usage or less than 10 GB free space. Checks are periodic, not a
-hard allocator limit. A single inference/JIT call can exceed the previous
-measurement, and concurrent users may change load between checks. Stop with
-Ctrl-C; the finally block closes only this run's simulator. No other processes
-are killed, ports occupied, or datasets/checkpoints downloaded by setup.
+The portable launcher preserves scheduler GPU assignments (defaults to GPU 0
+when unset), disables JAX preallocation and sets one BLAS/Torch thread. CPU
+affinity is optional via `DICE_CPUSET`. GPU checks query assigned devices, with
+thresholds configured through `DICE_MIN_GPU_FREE_MB`, `DICE_MAX_GPU_TEMP`,
+`DICE_MIN_RAM_MB` and `DICE_MIN_DISK_GB`. These checks are periodic observations,
+not allocator limits. No other processes are stopped. See the portable guide.
 
 ## Verification status
 
@@ -193,6 +191,6 @@ These local artifacts are ignored by Git. They establish a short working path,
 not a comparative success rate, a complete training dataset or an improvement.
 The shipped `dice_pi05_libero.toml` still requires its own verified replay file.
 
-`scripts/run_dice.sh`, `scripts/env.sh` and the resource guard currently use the
-prepared server's `/workspace/upenn` paths and CPU/device assignment. Adapt those
-settings explicitly before using another host or launching parallel DICE jobs.
+The portable DICE launcher and resource guard no longer use the prepared
+server's absolute paths or CPU assignment. Historical validation artifacts
+mentioned above belong to that server, not a fresh checkout.

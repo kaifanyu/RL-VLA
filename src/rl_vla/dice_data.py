@@ -71,7 +71,8 @@ def main():
     if output.exists():
         raise FileExistsError(output)
     c = config_from(args.config)
-    check(c)
+    if not check(c)["setup_ok"]:
+        raise RuntimeError("DICE setup is incomplete")
     source = Path(args.input)
     limit = c["train"]["replay_max_mb"] * 1024**2
     if source.stat().st_size > limit:

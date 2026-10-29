@@ -181,3 +181,72 @@ def test_standalone_runner_with_synthetic_prior_and_environment(tmp_path, monkey
     assert result["counters"] == {"episodes": 2, "decisions": 2, "updates": 1}
     assert result["prior"] == {"synthetic": True}
     assert env.closed
+    # A restart from an episode boundary matches an uninterrupted synthetic run.
+    c["train"]["episodes"] = 4
+    resumed, whole = tmp_path / "resumed", tmp_path / "whole"
+    runner.run(c, resumed, resume=output / "resume.pt")
+    runner.run(c, whole)
+    a = torch.load(resumed / "final.pt", weights_only=True)
+    b = torch.load(whole / "final.pt", weights_only=True)
+    assert a["counters"] == b["counters"]
+    for name in ("actor", "critics", "target"):
+        for key in a["learner"][name]:
+            assert torch.equal(a["learner"][name][key], b["learner"][name][key])
+
+    from rl_vla.dice_eval import evaluate
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError("Evaluation must never update parameters")
+
+    monkeypatch.setattr(DICE, "update", forbidden)
+    for checkpoint, label in ((None, "base"), (str(whole / "final.pt"), "dice")):
+        summary = evaluate(c, tmp_path / label, checkpoint=checkpoint, episodes=2, seed=100000)
+        assert summary["success_rate"] == 1.0
+        assert summary["optimizer_updates"] == 0
+    assert env.closed
+
+
+def test_multisample_target_averages_values_before_bootstrapping():
+    torch.manual_seed(42)
+    model = DICE(3, 4, 2, SETTINGS)
+    batch = {
+        "features": torch.randn(2, 3),
+        "actions": torch.randn(2, 2),
+        "returns": torch.ones(2),
+        "rewards": torch.tensor([0.0, 1.0]),
+        "discounts": torch.tensor([0.9, 0.0]),
+        "expert": torch.zeros(2),
+    }
+    props = (torch.randn(2, 2, 3), torch.randn(2, 2, 4), torch.randn(2, 2, 2))
+    nxt = (torch.randn(2, 3, 3), torch.randn(2, 3, 4), torch.randn(2, 3, 2))
+    with torch.no_grad():
+        nf, nz, np_ = (x.reshape(6, -1) for x in nxt)
+        values = model.q(nf, model.action(nf, nz, np_), target=True).min(0).values
+        target = batch["rewards"] + batch["discounts"] * values.reshape(2, 3).mean(1)
+        expected = (model.q(batch["features"], batch["actions"]) - target).square().mean(1).sum()
+    actual = model.update(batch, props, nxt, step=2)
+    assert actual["critic_loss"] == pytest.approx(float(expected))
+
+
+def test_offline_ratio_decays_and_clamps():
+    from rl_vla.dice_runtime import expert_fraction
+
+    data = {
+        "expert_fraction": 0.5,
+        "expert_fraction_end": 0.1,
+        "expert_fraction_decay_decisions": 100,
+    }
+    assert expert_fraction(data, 0) == 0.5
+    assert expert_fraction(data, 50) == pytest.approx(0.3)
+    assert expert_fraction(data, 500) == pytest.approx(0.1)
+
+
+def test_preflight_reports_fresh_host_without_loading_jax(tmp_path, monkeypatch):
+    import rl_vla.dice as runner
+
+    config = config_from("configs/dice_pi05_libero.toml")
+    monkeypatch.chdir(tmp_path)
+    result = runner.check(config)
+    assert result["setup_ok"] is False
+    assert result["training_started"] is False
+    assert "third_party/openpi" in result["missing"]

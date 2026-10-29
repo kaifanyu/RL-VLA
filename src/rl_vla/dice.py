@@ -16,7 +16,6 @@ from pathlib import Path
 import numpy as np
 
 UPSTREAM = "98d936e52523878f0172e606ea32403176497100"
-_last_storage_check = 0.0
 
 
 def config_from(path):
@@ -56,6 +55,12 @@ def config_from(path):
         raise ValueError("Explicitly select demonstrations or online_only_ablation")
     if not 0 < c["data"].get("expert_fraction", 0.5) < 1:
         raise ValueError("expert_fraction must lie in (0,1)")
+    end = c["data"].get("expert_fraction_end", c["data"].get("expert_fraction", 0.5))
+    duration = c["data"].get("expert_fraction_decay_decisions", 1)
+    if not np.isfinite(end) or not 0 <= end <= 1:
+        raise ValueError("expert_fraction_end must lie in [0,1]")
+    if type(duration) is not int or duration < 1:
+        raise ValueError("expert_fraction_decay_decisions must be a positive integer")
     if d.get("selection_strategy", "max_q_min") not in ("max_q_min", "max_q_std"):
         raise ValueError("Invalid action selection strategy")
     return c
@@ -70,28 +75,32 @@ def check(c):
     python = Path(c["env"]["python"])
     if not python.exists():
         missing.append(str(python))
-    revision = subprocess.check_output(
-        ["git", "-C", "third_party/dice_rl_upstream", "rev-parse", "HEAD"], text=True
-    ).strip()
-    if revision != UPSTREAM:
-        raise ValueError(f"DICE checkout changed: {revision}")
-    openpi_revision = subprocess.check_output(
-        ["git", "-C", "third_party/openpi", "rev-parse", "HEAD"], text=True
-    ).strip()
-    if openpi_revision != "215abfb217dbac7d5f1273282331b9b1866c0479":
-        raise ValueError(f"OpenPI checkout changed: {openpi_revision}")
-    if missing:
-        raise FileNotFoundError("Missing: " + ", ".join(missing))
+    revisions = {}
+    for name, expected in (
+        ("dice_rl_upstream", UPSTREAM),
+        ("openpi", "215abfb217dbac7d5f1273282331b9b1866c0479"),
+    ):
+        checkout = Path("third_party") / name
+        if not checkout.exists():
+            missing.append(str(checkout))
+            continue
+        revision = subprocess.check_output(
+            ["git", "-C", str(checkout), "rev-parse", "HEAD"], text=True
+        ).strip()
+        revisions[name] = revision
+        if revision != expected:
+            missing.append(f"{name}: expected {expected}, found {revision}")
     data_ready = (
         c["data"]["mode"] == "online_only_ablation"
         or Path(c["data"].get("path", "MISSING")).is_file()
     )
     result = {
-        "setup_ok": True,
+        "setup_ok": not missing,
+        "missing": missing,
         "training_data_ready": data_ready,
         "data_mode": c["data"]["mode"],
-        "upstream_commit": revision,
-        "openpi_commit": openpi_revision,
+        "upstream_commit": revisions.get("dice_rl_upstream"),
+        "openpi_commit": revisions.get("openpi"),
         "checkpoint": str(checkpoint.resolve()),
         "training_started": False,
     }
@@ -100,30 +109,10 @@ def check(c):
 
 
 def resource_check():
-    """Refuse to add work under pressure; never manage another user's process."""
-    values = subprocess.check_output(
-        ["nvidia-smi", "--query-gpu=memory.used,temperature.gpu", "--format=csv,noheader,nounits"],
-        text=True,
-    )
-    for line in values.strip().splitlines():
-        memory, temperature = map(int, line.split(","))
-        if memory >= 48 * 1024 or temperature >= 78:
-            raise RuntimeError("GPU pressure: stopping this DICE run only")
-    available = next(
-        int(line.split()[1])
-        for line in Path("/proc/meminfo").read_text().splitlines()
-        if line.startswith("MemAvailable:")
-    )
-    if available < 8 * 1024**2:
-        raise RuntimeError("Less than 8 GiB available RAM")
-    global _last_storage_check
-    if time.monotonic() - _last_storage_check > 3600:
-        import shutil
+    """Host-relative limits; GPU query respects the scheduler's visible devices."""
+    from rl_vla.dice_runtime import check_resources
 
-        size = int(subprocess.check_output(["du", "-sb", "/workspace/upenn"], text=True).split()[0])
-        if size >= 190 * 10**9 or shutil.disk_usage("/workspace").free < 10 * 10**9:
-            raise RuntimeError("Workspace storage limit reached")
-        _last_storage_check = time.monotonic()
+    check_resources()
 
 
 def tensor(x):
@@ -205,14 +194,17 @@ def save(path, learner, c, prior, counters):
     temporary.replace(path)
 
 
-def run(c, output, *, validate=False):
+def run(c, output, *, validate=False, resume=None):
     import torch
 
     from rl_vla.dice_core import DICE, discounted_returns
     from rl_vla.dice_pi05 import FrozenPi05
+    from rl_vla.dice_runtime import expert_fraction, save_training
     from rl_vla.rldt_env import make_primitive_env
 
-    check(c)
+    setup = check(c)
+    if setup is not None and not setup["setup_ok"]:
+        raise RuntimeError("DICE setup is incomplete; see check report")
     if (
         not validate
         and c["data"]["mode"] == "demonstrations"
@@ -252,6 +244,11 @@ def run(c, output, *, validate=False):
             return
         learner = DICE(prior.feature_dim, prior.noise_dim, prior.action_dim, c["dice"])
         demos = load_demonstrations(c, prior)
+        start_episode = 0
+        if resume:
+            from rl_vla.dice_runtime import restore_training
+
+            start_episode, decisions = restore_training(resume, learner, c, prior, replay, rng)
         metadata = {
             "config": c,
             "prior": prior.metadata,
@@ -261,8 +258,9 @@ def run(c, output, *, validate=False):
             "torch": torch.__version__,
         }
         (output / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
-        for episode in range(c["train"]["episodes"]):
-            raw, _ = env.reset(seed=c["train"]["seed"] + episode)
+        for episode in range(start_episode, c["train"]["episodes"]):
+            raw, reset_info = env.reset(seed=c["train"]["seed"] + episode)
+            primitive_steps, clipped = 0, 0
             trajectory, terminated, truncated = [], False, False
             while not (terminated or truncated):
                 resource_check()
@@ -281,9 +279,10 @@ def run(c, output, *, validate=False):
                 chunk = prior.decode(action.numpy(), full[index], raw)
                 reward, n = 0.0, 0
                 for primitive in chunk:
-                    next_raw, r, terminated, truncated, _info = env.step(
-                        np.clip(primitive, env.low, env.high)
-                    )
+                    command = np.clip(primitive, env.low, env.high)
+                    clipped += int(np.any(command != primitive))
+                    next_raw, r, terminated, truncated, _info = env.step(command)
+                    primitive_steps += 1
                     reward += c["dice"]["gamma"] ** n * r
                     n += 1
                     if terminated or truncated:
@@ -322,13 +321,10 @@ def run(c, output, *, validate=False):
             if len(replay) >= c["train"]["batch_size"]:
                 for _ in range(c["train"]["updates_per_episode"]):
                     resource_check()
+                    ratio = expert_fraction(c["data"], decisions)
                     rows = []
                     for _ in range(c["train"]["batch_size"]):
-                        pool = (
-                            demos
-                            if demos and rng.random() < c["data"]["expert_fraction"]
-                            else replay
-                        )
+                        pool = demos if demos and rng.random() < ratio else replay
                         rows.append(pool[int(rng.integers(len(pool)))])
                     batch = {
                         key: tensor(np.stack([row[key] for row in rows]))
@@ -344,8 +340,8 @@ def run(c, output, *, validate=False):
                     prop = proposals(
                         prior, [r["observation"] for r in rows], c["dice"]["particles"]
                     )
-                    next_prop = tuple(
-                        x[:, 0] for x in proposals(prior, [r["next_observation"] for r in rows], 1)
+                    next_prop = proposals(
+                        prior, [r["next_observation"] for r in rows], c["dice"]["particles"]
                     )
                     last = learner.update(batch, prop, next_prop, step=decisions)
             counters = {"episodes": episode + 1, "decisions": decisions, "updates": learner.updates}
@@ -355,7 +351,11 @@ def run(c, output, *, validate=False):
                         {
                             **counters,
                             **last,
-                            "success": bool(terminated),
+                            "success": bool(_info.get("is_success", terminated)),
+                            "initial_state_id": reset_info.get("initial_state_id"),
+                            "primitive_steps": primitive_steps,
+                            "clipped_commands": clipped,
+                            "expert_fraction": expert_fraction(c["data"], decisions),
                             "return": returns[0],
                             "timestamp": time.time(),
                         }
@@ -364,7 +364,9 @@ def run(c, output, *, validate=False):
                 )
             if (episode + 1) % c["train"]["save_every"] == 0:
                 save(output / "latest.pt", learner, c, prior, counters)
+                save_training(output / "resume.pt", learner, c, prior, counters, replay, rng)
         save(output / "final.pt", learner, c, prior, counters)
+        save_training(output / "resume.pt", learner, c, prior, counters, replay, rng)
     finally:
         env.close()
 
@@ -372,18 +374,39 @@ def run(c, output, *, validate=False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "command", choices=("check", "validate-policy", "train"), nargs="?", default="check"
+        "command",
+        choices=("check", "validate-policy", "train", "evaluate"),
+        nargs="?",
+        default="check",
     )
     parser.add_argument("--config", default="configs/dice_pi05_libero.toml")
     parser.add_argument("--output")
+    parser.add_argument("--checkpoint", help="DICE checkpoint for evaluation")
+    parser.add_argument("--resume", help="Trusted local episode-boundary resume.pt")
+    parser.add_argument("--baseline", action="store_true", help="Evaluate the unedited prior")
+    parser.add_argument("--episodes", type=int, default=50, help="Evaluation episode count")
+    parser.add_argument("--seed", type=int, default=100000, help="First evaluation reset seed")
     args = parser.parse_args()
     c = config_from(args.config)
     if args.command == "check":
-        check(c)
+        result = check(c)
+        if not result["setup_ok"]:
+            raise SystemExit(1)
     else:
         if not args.output:
             parser.error("--output must be a new directory")
-        run(c, args.output, validate=args.command == "validate-policy")
+        if args.command == "evaluate":
+            from rl_vla.dice_eval import evaluate
+
+            if bool(args.checkpoint) == args.baseline:
+                parser.error("evaluate requires exactly one of --checkpoint or --baseline")
+            evaluate(
+                c, args.output, checkpoint=args.checkpoint, episodes=args.episodes, seed=args.seed
+            )
+        else:
+            if args.resume and args.command != "train":
+                parser.error("--resume is only valid for train")
+            run(c, args.output, validate=args.command == "validate-policy", resume=args.resume)
 
 
 if __name__ == "__main__":

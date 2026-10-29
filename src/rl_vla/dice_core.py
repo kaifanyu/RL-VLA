@@ -99,7 +99,8 @@ class DICE:
     def update(self, batch, proposals, next_proposals, *, step):
         """Numerical optimizer update; caller owns replay sampling and frozen prior.
 
-        proposals contain [B,K,F/Z/A]; next proposals have one sample per state.
+        proposals contain [B,K,F/Z/A]; next proposals may contain [B,K,F/Z/A]
+        or legacy [B,F/Z/A]. Average target values over independent samples.
         MC calibration is computed before updating the critic, as in upstream.
         """
         s = self.settings
@@ -107,11 +108,15 @@ class DICE:
         with torch.no_grad():
             calibration = self.q(f, action).min(0).values - batch["returns"]
             nf, nz, np = next_proposals
+            multi = nf.ndim == 3
+            if multi:
+                b, k, _ = nf.shape
+                nf, nz, np = (x.reshape(b * k, -1) for x in (nf, nz, np))
             next_action = self.action(nf, nz, np)
-            target = (
-                batch["rewards"]
-                + batch["discounts"] * self.q(nf, next_action, target=True).min(0).values
-            )
+            next_value = self.q(nf, next_action, target=True).min(0).values
+            if multi:
+                next_value = next_value.reshape(b, k).mean(1)
+            target = batch["rewards"] + batch["discounts"] * next_value
         critic_loss = (self.q(f, action) - target[None]).square().mean(1).sum()
         self.critic_optimizer.zero_grad(set_to_none=True)
         critic_loss.backward()

@@ -22,6 +22,8 @@ settle_steps = 10
 mode = "demonstrations"
 path = "datasets/dice/libero_spatial_0.mpk"
 expert_fraction = 0.5
+expert_fraction_end = 0.1
+expert_fraction_decay_decisions = 10000
 
 [train]
 seed = 0
