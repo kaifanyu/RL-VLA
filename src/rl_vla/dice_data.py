@@ -12,7 +12,10 @@ import numpy as np
 from rl_vla.dice_core import discounted_returns
 
 
-def convert_episode(episode, prior, gamma):
+def convert_episode(episode, prior, gamma, provenance):
+    from rl_vla.dice import validate_replay_provenance
+
+    validate_replay_provenance(episode.get("provenance"), provenance)
     observations = episode["observations"]
     actions = np.asarray(episode["actions"], np.float32)
     rewards = np.asarray(episode["rewards"], np.float32)
@@ -24,6 +27,13 @@ def convert_episode(episode, prior, gamma):
         raise ValueError("Non-finite demonstration data")
     if episode.get("ending") not in ("terminated", "truncated"):
         raise ValueError("Need a verified finite-episode boundary")
+    if any(
+        not isinstance(raw, dict)
+        or not isinstance(raw.get("openpi"), dict)
+        or raw["openpi"].get("prompt") != provenance["task"]["instruction"]
+        for raw in observations
+    ):
+        raise ValueError("Episode observation instruction does not match task provenance")
     records = []
     h, e = prior.flow.horizon, prior.execute_steps
     for start in range(0, len(actions), e):
@@ -48,6 +58,7 @@ def convert_episode(episode, prior, gamma):
                 "rewards": reward,
                 "discounts": 0.0 if end == len(actions) else gamma ** (end - start),
                 "expert": 1.0,
+                "provenance": provenance,
             }
         )
     returns = discounted_returns([r["rewards"] for r in records], [r["discounts"] for r in records])
@@ -66,6 +77,9 @@ def main():
     parser.add_argument("--config", default="configs/dice_pi05_libero.toml")
     parser.add_argument("--input", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--task-key", required=True)
+    parser.add_argument("--source-id", required=True)
+    parser.add_argument("--source-split", required=True)
     args = parser.parse_args()
     output = Path(args.output)
     if output.exists():
@@ -80,15 +94,27 @@ def main():
     payload = msgpack_numpy.unpackb(source.read_bytes())
     if payload.get("format") != "dice-libero-episodes-v1" or not payload.get("episodes"):
         raise ValueError("Expected nonempty dice-libero-episodes-v1 archive")
+    provenance = payload.get("provenance")
+    from rl_vla.dice import config_provenance, validate_replay_provenance
+
+    expected = config_provenance(c)
+    validate_replay_provenance(provenance, expected)
+    if provenance["task"]["task_key"] != args.task_key:
+        raise ValueError("Explicit --task-key does not match demonstration provenance")
+    if provenance["demonstration"]["source_id"] != args.source_id:
+        raise ValueError("Explicit --source-id does not match demonstration provenance")
+    if provenance["demonstration"]["source_split"] != args.source_split:
+        raise ValueError("Explicit --source-split does not match demonstration provenance")
     resource_check()
     prior = FrozenPi05(c["policy"], c["dice"])
     records = []
     for episode in payload["episodes"]:
-        records.extend(convert_episode(episode, prior, c["dice"]["gamma"]))
+        records.extend(convert_episode(episode, prior, c["dice"]["gamma"], provenance))
     packed = msgpack_numpy.packb(
         {
             "format": "dice-pi05-transitions-v1",
             "metadata": {**prior.metadata, "gamma": c["dice"]["gamma"]},
+            "provenance": provenance,
             "transitions": records,
         }
     )

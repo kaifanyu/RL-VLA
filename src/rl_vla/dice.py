@@ -6,7 +6,9 @@ Training requires the explicit `train` subcommand; no existing CLI is changed.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import re
 import subprocess
 import time
 import tomllib
@@ -136,6 +138,107 @@ def replay_bytes(value):
     return 0
 
 
+def validate_replay_provenance(provenance, expected):
+    """Require complete replay lineage and match it to the selected environment."""
+    if not isinstance(provenance, dict) or not isinstance(expected, dict):
+        raise TypeError("Demonstration provenance is missing or malformed")
+    required = {
+        "task": ("task_key", "task_suite", "task_id", "instruction"),
+        "environment": ("adapter", "split"),
+        "demonstration": ("source_id", "source_split"),
+    }
+    for section, keys in required.items():
+        actual_section = provenance.get(section)
+        expected_section = expected.get(section)
+        if not isinstance(actual_section, dict) or not isinstance(expected_section, dict):
+            raise TypeError(f"Demonstration provenance is missing {section} identity")
+        optional = ("protocol_id", "protocol_sha256", "protocol_version")
+        checked_keys = keys + tuple(
+            key for key in optional if key in actual_section or key in expected_section
+        )
+        for key in checked_keys:
+            actual = actual_section.get(key)
+            target = expected_section.get(key)
+            if key not in actual_section or key not in expected_section:
+                raise ValueError(f"Demonstration provenance is unverifiable: {section}.{key}")
+            if actual != target:
+                label = "task identity" if section == "task" else f"{section} identity"
+                raise ValueError(f"Demonstration {label} mismatch at {key}: {actual!r} != {target!r}")
+    if (
+        not provenance["task"]["task_key"]
+        or not provenance["task"]["task_suite"]
+        or type(provenance["task"]["task_id"]) is not int
+        or provenance["task"]["task_id"] < 0
+    ):
+        raise ValueError("Demonstration task identity is invalid")
+    if not provenance["task"]["instruction"]:
+        raise ValueError("Demonstration instruction is missing")
+    if not provenance["environment"]["adapter"]:
+        raise ValueError("Demonstration environment adapter identity is missing")
+    if not provenance["environment"]["split"]:
+        raise ValueError("Demonstration environment split is missing")
+    environment = provenance["environment"]
+    protocol_keys = ("protocol_id", "protocol_sha256", "protocol_version")
+    if any(key in environment for key in protocol_keys):
+        if not all(key in environment for key in protocol_keys):
+            raise ValueError("Demonstration protocol provenance is incomplete")
+        protocol_hash = environment["protocol_sha256"]
+        if not isinstance(protocol_hash, str) or re.fullmatch(r"[0-9a-f]{64}", protocol_hash) is None:
+            raise ValueError("Demonstration protocol SHA-256 is missing or invalid")
+        if environment["protocol_id"] != f"sha256:{protocol_hash}":
+            raise ValueError("Demonstration protocol identifier does not match its SHA-256")
+        if type(environment["protocol_version"]) is not int:
+            raise ValueError("Demonstration protocol version is invalid")
+    if not provenance["demonstration"]["source_id"] or not provenance["demonstration"]["source_split"]:
+        raise ValueError("Demonstration source/split provenance is missing")
+
+
+def config_provenance(c):
+    provenance = c["data"].get("provenance")
+    validate_replay_provenance(provenance, provenance)
+    environment = provenance["environment"]
+    if environment["adapter"] != c["env"].get("factory"):
+        raise ValueError("Configured replay adapter differs from the environment factory")
+    kwargs = c["env"].get("kwargs", {})
+    if environment["split"] != kwargs.get("split", "train"):
+        raise ValueError("Configured replay split differs from the demonstration environment split")
+    if c["env"].get("factory") == "rl_vla.envs.libero_pro:make_env":
+        if not all(key in environment for key in ("protocol_id", "protocol_sha256", "protocol_version")):
+            raise ValueError("LIBERO-PRO replay requires verified protocol provenance")
+        protocol_path = Path(kwargs.get("protocol", ""))
+        protocol_bytes = protocol_path.read_bytes()
+        digest = hashlib.sha256(protocol_bytes).hexdigest()
+        if digest != environment["protocol_sha256"]:
+            raise ValueError("Configured demonstration protocol fingerprint mismatch")
+        plan = json.loads(protocol_bytes)
+        task = plan["tasks"].get(kwargs.get("task_key"))
+        if task is None:
+            raise ValueError("Configured LIBERO-PRO task_key is absent from protocol")
+        if (provenance["task"]["task_key"], provenance["task"]["task_suite"],
+            provenance["task"]["task_id"]) != (
+                kwargs["task_key"], task["suite"], task["task_id"]
+        ):
+            raise ValueError("Configured replay task identity differs from LIBERO-PRO protocol")
+        if environment["protocol_version"] != plan.get("version"):
+            raise ValueError("Configured replay protocol version mismatch")
+    else:
+        if (provenance["task"]["task_suite"], provenance["task"]["task_id"]) != (
+            kwargs.get("task_suite"), kwargs.get("task_id")
+        ):
+            raise ValueError("Configured replay task identity differs from environment settings")
+    return provenance
+
+
+def validate_live_task(observation, info, provenance):
+    expected_task = provenance["task"]
+    if observation.get("openpi", {}).get("prompt") != expected_task["instruction"]:
+        raise ValueError("Live environment instruction differs from demonstration provenance")
+    if (info.get("task_suite"), info.get("task_id")) != (
+        expected_task["task_suite"], expected_task["task_id"]
+    ):
+        raise ValueError("Live environment task identity differs from demonstration provenance")
+
+
 def load_demonstrations(c, prior):
     """Explicit normalized transition format, not arbitrary pickle/checkpoints."""
     if c["data"]["mode"] == "online_only_ablation":
@@ -155,13 +258,18 @@ def load_demonstrations(c, prior):
         raise ValueError("Demonstration execution horizon mismatch")
     if payload["metadata"].get("gamma") != c["dice"]["gamma"]:
         raise ValueError("Demonstration return discount mismatch")
+    expected_provenance = config_provenance(c)
+    validate_replay_provenance(payload.get("provenance"), expected_provenance)
     records = payload["transitions"]
     if not records:
         raise ValueError("Demonstration replay is empty")
     for r in records:
+        validate_replay_provenance(r.get("provenance"), expected_provenance)
         for key in ("observation", "next_observation"):
             if not isinstance(r[key], dict) or "openpi" not in r[key]:
                 raise ValueError("Demonstrations require images, proprioception, and prompt")
+            if r[key]["openpi"].get("prompt") != expected_provenance["task"]["instruction"]:
+                raise ValueError("Demonstration instruction does not match task provenance")
         a = np.asarray(r["actions"], np.float32)
         if a.shape != (prior.action_dim,) or not np.isfinite(a).all():
             raise ValueError("Expected flattened normalized executed action prefix")
@@ -202,6 +310,12 @@ def run(c, output, *, validate=False, resume=None):
     from rl_vla.dice_runtime import expert_fraction, save_training
     from rl_vla.rldt_env import make_primitive_env
 
+    if c["env"].get("factory") == "rl_vla.envs.libero_pro:make_env":
+        kwargs = c["env"].get("kwargs", {})
+        if not kwargs.get("protocol") or not kwargs.get("task_key"):
+            raise ValueError("LIBERO-PRO training requires explicit protocol and task_key")
+        if kwargs.get("split") != "train":
+            raise ValueError("DICE training must use the LIBERO-PRO train split")
     setup = check(c)
     if setup is not None and not setup["setup_ok"]:
         raise RuntimeError("DICE setup is incomplete; see check report")
@@ -244,6 +358,10 @@ def run(c, output, *, validate=False, resume=None):
             return
         learner = DICE(prior.feature_dim, prior.noise_dim, prior.action_dim, c["dice"])
         demos = load_demonstrations(c, prior)
+        if demos:
+            provenance = config_provenance(c)
+            probe_observation, probe_info = env.reset(seed=c["train"]["seed"])
+            validate_live_task(probe_observation, probe_info, provenance)
         start_episode = 0
         if resume:
             from rl_vla.dice_runtime import restore_training

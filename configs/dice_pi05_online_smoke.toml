@@ -1,5 +1,6 @@
 # Pipeline diagnostic without demonstrations; not the demonstration-assisted recipe.
 algorithm = "dice"
+experiment_label = "LIBERO Spatial online-only diagnostic; not LIBERO-PRO"
 
 [policy]
 checkpoint = "checkpoints/openpi/pi05_libero"

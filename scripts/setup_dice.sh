@@ -28,7 +28,22 @@ mkdir -p third_party
 fetch_pin third_party/openpi https://github.com/Physical-Intelligence/openpi.git 215abfb217dbac7d5f1273282331b9b1866c0479
 fetch_pin third_party/dice_rl_upstream https://github.com/zhanyisun/dice-rl.git 98d936e52523878f0172e606ea32403176497100
 git -C third_party/openpi submodule update --init --recursive
-if [[ ! -x .venv/bin/python ]]; then uv venv --python 3.11.13 .venv; fi
+check_python311() {
+  local interpreter="$1"
+  if [[ ! -x "$interpreter" ]] || ! "$interpreter" -c \
+      'import sys; raise SystemExit(0 if sys.version_info[:2] == (3, 11) else 1)'; then
+    echo "Existing environment must use Python 3.11; preserving it unchanged: $interpreter" >&2
+    return 1
+  fi
+}
+if [[ ! -e .venv ]]; then
+  uv venv --python 3.11.13 .venv
+else
+  check_python311 .venv/bin/python
+fi
+if [[ -e third_party/openpi/.venv ]]; then
+  check_python311 third_party/openpi/.venv/bin/python
+fi
 uv pip install --python .venv/bin/python --require-hashes --torch-backend cpu \
   -r docker/requirements-libero.lock -r docker/requirements-test.lock
 uv pip install --python .venv/bin/python editables==0.5 setuptools==78.1.0

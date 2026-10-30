@@ -1,4 +1,5 @@
 algorithm = "dice"
+experiment_label = "LIBERO Spatial diagnostic; not LIBERO-PRO"
 
 [policy]
 checkpoint = "checkpoints/openpi/pi05_libero"

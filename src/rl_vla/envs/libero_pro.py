@@ -7,7 +7,6 @@ from pathlib import Path
 import numpy as np
 
 from rl_vla.envs.libero import LiberoEnv
-from rl_vla.robustness import load_states
 
 
 def checked_file(record):
@@ -83,6 +82,8 @@ def make_env(*, protocol, task_key, split):
         raise RuntimeError("Use .venv-pro: a different LIBERO fork was imported")
     condition = task["source" if split == "source" else "pro"]
     bddl = checked_file(condition["bddl"])
+    from rl_vla.robustness import load_states
+
     states = load_states(checked_file(condition["states"]))
     if version == 2 and split != "source" and (
         len(states) != task["pro_state_count"] or len(np.unique(states, axis=0)) != len(states)

@@ -1,0 +1,48 @@
+algorithm = "dice"
+
+[policy]
+checkpoint = "checkpoints/openpi/pi05_libero"
+model_config = "pi05_libero"
+projection_only = false
+
+[env]
+kind = "external"
+factory = "rl_vla.envs.libero_pro:make_env"
+python = ".venv-pro/bin/python"
+[env.kwargs]
+protocol = ""
+task_key = ""
+split = "train"
+
+[data]
+mode = "demonstrations"
+path = ""
+expert_fraction = 0.5
+expert_fraction_end = 0.1
+expert_fraction_decay_decisions = 10000
+
+[train]
+seed = 0
+episodes = 100
+batch_size = 4
+replay_capacity = 512
+replay_max_mb = 512
+updates_per_episode = 4
+save_every = 5
+
+[dice]
+execute_steps = 5
+ode_steps = 10
+particles = 2
+selection_samples = 4
+selection_strategy = "max_q_min"
+selection_warmup = 256
+filter_warmup = 1000
+width = 256
+actor_lr = 0.0001
+critic_lr = 0.0003
+gamma = 0.99
+target_tau = 0.005
+bc_weight = 1.0
+underestimation_threshold = -0.1
+max_grad_norm = 1.0

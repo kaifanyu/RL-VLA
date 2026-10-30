@@ -103,8 +103,18 @@ this is not an action rollout test. Preserve `validation.json` for review.
 ```python
 {
     "format": "dice-libero-episodes-v1",
+  "provenance": {
+    "task": {"task_key": "explicit-key", "task_suite": "explicit-suite",
+         "task_id": 0, "instruction": "exact verified prompt"},
+    "environment": {"adapter": "explicit-adapter", "protocol_id": "explicit-id",
+            "protocol_sha256": "verified-hash", "protocol_version": 2,
+            "split": "train"},
+    "demonstration": {"source_id": "explicit-dataset-revision",
+              "source_split": "train"},
+  },
     "episodes": [
         {
+      "provenance": "same complete provenance object as archive",
             "observations": [obs_0, ..., obs_T],  # T+1, including the final state
             "actions": primitive_actions,       # float32 [T,7], controller units
             "rewards": primitive_rewards,       # float32 [T], verified task rewards
@@ -125,6 +135,12 @@ reward/success predicate and episode horizon. Verify these against the actual
 dataset before exporting. Reconstructing a missing terminal observation needs
 simulator replay, not copying the last pre-action frame.
 
+Do not infer missing task, instruction, protocol, source, or split values. Both
+the archive and each episode must contain complete provenance; prompts must
+exactly match the declared instruction. The loader compares all provenance to
+the selected DICE config and rejects mismatched or unverifiable replay before
+sampling it.
+
 The converter uses the **actual checkpoint input transforms** to normalize the
 demonstration actions, chunks them using the configured execution horizon,
 computes primitive-discounted chunk rewards and MC returns, and records
@@ -134,14 +150,18 @@ episodes, invalid shapes, missing boundaries, non-finite values, and overwrites.
 ```bash
 source scripts/env.sh
 export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"
-nice -n 10 taskset -c 0-3 third_party/openpi/.venv/bin/python -m rl_vla.dice_data \
-  --input datasets/dice/verified_episodes.mpk \
-  --output datasets/dice/libero_spatial_0.mpk
+third_party/openpi/.venv/bin/python -m rl_vla.dice_data \
+  --config /absolute/path/to/explicit-dice-config.toml \
+  --input /absolute/path/to/verified_episodes.mpk \
+  --output /absolute/path/to/normalized_replay.mpk \
+  --task-key explicit-key --source-id explicit-dataset-revision --source-split train
 ```
 
-The training loader validates the horizon, gamma, and fingerprint before using
-this replay. Raw RGB observations are retained; KV caches are recomputed rather
-than filling replay with GPU caches. Replay count and array bytes are bounded.
+The training loader validates task/instruction/environment/protocol/source
+provenance as well as horizon, gamma, checkpoint and normalization fingerprints
+before using this replay. Raw RGB observations are retained; KV caches are
+recomputed rather than filling replay with GPU caches. Replay count and array
+bytes are bounded.
 
 ## Training
 

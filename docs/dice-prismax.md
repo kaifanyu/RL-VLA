@@ -55,7 +55,36 @@ Resource guard defaults: at least 2048 MiB GPU free, temperature below 85 C,
 `DICE_MAX_GPU_TEMP`, `DICE_MIN_RAM_MB`, `DICE_MIN_DISK_GB` for the allocated host.
 These are periodic checks, not memory caps or an estimate of model requirements.
 
-## 2. Verify collection and learning
+## 2. Prepare an explicit LIBERO-PRO task
+
+The shipped `configs/dice_pi05_libero.toml` and online smoke config are labeled
+LIBERO Spatial diagnostics; they are not held-out protocol evaluations. For the
+existing PRO protocol, name the exact protocol file and task key. The generator
+validates its disjoint train/validation/test state lists and creates three
+separate configs without overwriting existing files:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/prepare_dice_pro.py \
+  --protocol /absolute/path/to/protocol.json --task-key object_0 \
+  --output /absolute/path/to/dice-configs/object_0 \
+  --instruction 'the exact instruction from the verified task' \
+  --source-id verified-dataset-revision --source-split train \
+  --replay /absolute/path/to/verified-replay.mpk
+```
+
+The task key, instruction, demonstration source/split, protocol identity and
+protocol hash are explicit. Do not select a task or dataset by directory order
+or infer missing metadata. The replay archive and each source episode must carry
+the same provenance and exact task prompt; conversion and loading reject missing
+or mismatched lineage. Use `train.toml` for training and exactly the protocol's
+validation/test state count with the corresponding evaluation config. Baseline
+and DICE policy evaluation use the same split adapter and ordered state IDs;
+logs include IDs and actual controlled primitive steps. Test reports are not
+checkpoint-selection inputs. DICE training episodes are not equivalent to
+RLDT iterations; compare actual controlled steps, and report optimizer/update
+budgets separately.
+
+## 3. Verify collection and learning
 
 For an explicit two-episode diagnostic requiring no demonstration file:
 
@@ -78,9 +107,10 @@ or task success is fabricated. The converter is:
 
 ```bash
 PYTHONPATH=src third_party/openpi/.venv/bin/python -m rl_vla.dice_data \
-  --config configs/dice_pi05_libero.toml \
-  --input datasets/dice/verified_episodes.mpk \
-  --output datasets/dice/libero_spatial_0.mpk
+  --config /absolute/path/to/dice-configs/object_0/train.toml \
+  --input /absolute/path/to/verified_episodes.mpk \
+  --output /absolute/path/to/verified-replay.mpk \
+  --task-key object_0 --source-id verified-dataset-revision --source-split train
 ```
 
 Run the converter with the same rendering/cache environment as the launcher
@@ -88,7 +118,7 @@ Run the converter with the same rendering/cache environment as the launcher
 Demonstration preprocessing is still a required data step. Kai's unpublished
 code is not a substitute for that file.
 
-## 3. Baseline, train, evaluate
+## 4. Baseline, train, evaluate
 
 Use the same task/config for all three commands. Choose task-specific budgets
 and a task on which the base policy has room to improve before a full run.
@@ -120,7 +150,7 @@ The independent evaluation seed range is a convention, not proof of disjoint
 LIBERO initial states: the standard suite has a finite state pool. A real held-out
 state split/PRO perturbation protocol must be explicitly configured separately.
 
-## 4. Restart
+## 5. Restart
 
 Increase `train.episodes` in a copied config, then use a new output directory:
 

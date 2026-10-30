@@ -112,14 +112,23 @@ def test_demonstration_chunking_normalizes_and_preserves_terminal_returns():
         execute_steps=5,
         flow=SimpleNamespace(horizon=10, action_dim=32, _transform_observation=transform),
     )
+    provenance = {
+        "task": {"task_key": "synthetic_0", "task_suite": "synthetic", "task_id": 0,
+                 "instruction": "synthetic"},
+        "environment": {"adapter": "synthetic.adapter", "protocol_id": f"sha256:{'a' * 64}",
+                 "protocol_sha256": "a" * 64, "protocol_version": 1,
+                         "split": "train"},
+        "demonstration": {"source_id": "fixture-dataset", "source_split": "train"},
+    }
     observations = [{"openpi": {"prompt": "synthetic"}} for _ in range(8)]
     episode = {
         "observations": observations,
         "actions": np.ones((7, 7)),
         "rewards": np.array([0.0] * 6 + [1.0]),
         "ending": "terminated",
+        "provenance": provenance,
     }
-    records = convert_episode(episode, prior, 0.9)
+    records = convert_episode(episode, prior, 0.9, provenance)
     assert len(records) == 2
     assert records[0]["discounts"] == 0.9**5
     assert records[1]["discounts"] == 0.0
@@ -127,6 +136,290 @@ def test_demonstration_chunking_normalizes_and_preserves_terminal_returns():
     assert np.isclose(records[1]["returns"], 0.9)
     np.testing.assert_array_equal(records[0]["actions"], np.full(35, 2.0))
     assert records[-1]["next_observation"] is observations[-1]
+    assert records[0]["provenance"] == provenance
+
+
+def test_wrong_task_replay_provenance_is_rejected(tmp_path, monkeypatch):
+    import hashlib
+    import json
+    import sys
+    from types import SimpleNamespace
+
+    import rl_vla.dice as runner
+
+    protocol = tmp_path / "protocol.json"
+    protocol_data = {"version": 2, "tasks": {"libero_pro_task_a": {
+        "suite": "libero_spatial", "task_id": 0,
+    }}}
+    protocol.write_text(json.dumps(protocol_data))
+    protocol_hash = hashlib.sha256(protocol.read_bytes()).hexdigest()
+    expected = {
+        "task": {"task_key": "libero_pro_task_a", "task_suite": "libero_spatial",
+                 "task_id": 0, "instruction": "pick up the cube"},
+        "environment": {"adapter": "rl_vla.envs.libero_pro:make_env",
+                 "protocol_id": f"sha256:{protocol_hash}",
+                 "protocol_sha256": protocol_hash, "protocol_version": 2,
+                         "split": "train"},
+        "demonstration": {"source_id": "dataset-a", "source_split": "train"},
+    }
+    actual = copy.deepcopy(expected)
+    actual["task"]["task_key"] = "libero_pro_task_b"
+    archive_path = tmp_path / "wrong-task.mpk"
+    archive_path.write_bytes(b"stub")
+    payload = {
+        "format": "dice-pi05-transitions-v1",
+        "metadata": {"checkpoint_metadata_sha256": "checkpoint",
+                     "normalization_assets_sha256": "normalization",
+                     "execute_steps": 5, "gamma": 0.99},
+        "provenance": actual,
+        "transitions": [],
+    }
+    msgpack_numpy = SimpleNamespace(unpackb=lambda _value: payload)
+    monkeypatch.setitem(sys.modules, "openpi_client", SimpleNamespace(msgpack_numpy=msgpack_numpy))
+    config = {
+        "data": {"mode": "demonstrations", "path": str(archive_path),
+                 "provenance": expected},
+        "train": {"replay_max_mb": 1}, "dice": {"gamma": 0.99},
+        "env": {"factory": "rl_vla.envs.libero_pro:make_env", "kwargs": {
+            "protocol": str(protocol), "task_key": "libero_pro_task_a", "split": "train"}},
+    }
+    prior = SimpleNamespace(metadata={"checkpoint_metadata_sha256": "checkpoint",
+                                      "normalization_assets_sha256": "normalization"},
+                            execute_steps=5)
+    with pytest.raises(ValueError, match="task identity mismatch"):
+        runner.load_demonstrations(config, prior)
+
+
+def test_missing_replay_provenance_is_not_inferred():
+    from rl_vla.dice import validate_replay_provenance
+
+    with pytest.raises(TypeError, match="missing or malformed"):
+        validate_replay_provenance(None, {})
+
+
+@pytest.mark.parametrize(
+    ("section", "key", "value"),
+    [
+        ("task", "instruction", "different instruction"),
+        ("environment", "adapter", "different.adapter:make_env"),
+        ("environment", "protocol_sha256", "b" * 64),
+        ("demonstration", "source_id", "different-dataset"),
+        ("demonstration", "source_split", "validation"),
+    ],
+)
+def test_replay_provenance_mismatches_are_rejected(section, key, value):
+    from rl_vla.dice import validate_replay_provenance
+
+    expected = {
+        "task": {"task_key": "task_a", "task_suite": "libero_spatial", "task_id": 0,
+                 "instruction": "pick up the cube"},
+        "environment": {"adapter": "rl_vla.envs.libero_pro:make_env", "split": "train",
+                        "protocol_id": f"sha256:{'a' * 64}", "protocol_sha256": "a" * 64,
+                        "protocol_version": 2},
+        "demonstration": {"source_id": "dataset-a", "source_split": "train"},
+    }
+    actual = copy.deepcopy(expected)
+    actual[section][key] = value
+    with pytest.raises(ValueError):
+        validate_replay_provenance(actual, expected)
+
+
+def test_live_environment_instruction_must_match_replay_provenance():
+    from rl_vla.dice import validate_live_task
+
+    provenance = {"task": {"instruction": "pick up the cube",
+                            "task_suite": "libero_spatial", "task_id": 0}}
+    with pytest.raises(ValueError, match="instruction differs"):
+        validate_live_task(
+            {"openpi": {"prompt": "open the drawer"}},
+            {"task_suite": "libero_spatial", "task_id": 0},
+            provenance,
+        )
+    with pytest.raises(ValueError, match="task identity differs"):
+        validate_live_task(
+            {"openpi": {"prompt": "pick up the cube"}},
+            {"task_suite": "libero_spatial", "task_id": 1},
+            provenance,
+        )
+
+
+def test_libero_pro_evaluation_requires_exact_protocol_states(tmp_path):
+    import hashlib
+    import json
+
+    from rl_vla.dice_eval import evaluation_contract
+
+    protocol = {
+        "version": 2,
+        "tasks": {
+            "task_a": {
+                "suite": "libero_spatial", "task_id": 0, "pro_state_count": 4,
+                "train_state_ids": [0, 1], "validation_state_ids": [2],
+                "test_state_ids": [3],
+            }
+        },
+    }
+    path = tmp_path / "protocol.json"
+    encoded = json.dumps(protocol).encode()
+    path.write_bytes(encoded)
+    digest = hashlib.sha256(encoded).hexdigest()
+    provenance = {
+        "task": {"task_key": "task_a", "task_suite": "libero_spatial", "task_id": 0,
+                 "instruction": "pick up the cube"},
+        "environment": {"adapter": "rl_vla.envs.libero_pro:make_env",
+                         "protocol_id": f"sha256:{digest}", "protocol_sha256": digest,
+                         "protocol_version": 2, "split": "train"},
+        "demonstration": {"source_id": "demo-a", "source_split": "train"},
+    }
+    config = {
+        "env": {"factory": "rl_vla.envs.libero_pro:make_env", "kwargs": {
+            "protocol": str(path), "task_key": "task_a", "split": "validation"}},
+        "data": {"provenance": provenance},
+    }
+    kwargs, state_ids, actual_hash, _ = evaluation_contract(config)
+    assert kwargs["split"] == "validation"
+    assert state_ids == [2]
+    assert actual_hash == digest
+    config["env"]["kwargs"]["task_key"] = "task_b"
+    with pytest.raises(ValueError, match="Task key is absent"):
+        evaluation_contract(config)
+
+
+def test_baseline_and_dice_evaluation_use_identical_ordered_states(tmp_path, monkeypatch):
+    import hashlib
+    import json
+    from types import SimpleNamespace
+    from typing import ClassVar
+
+    import rl_vla.dice as runner
+    import rl_vla.dice_core as core
+    import rl_vla.dice_eval as evaluation
+    import rl_vla.dice_pi05 as policy_adapter
+    import rl_vla.rldt_env as env_adapter
+
+    protocol = tmp_path / "protocol.json"
+    protocol_data = {"version": 2, "tasks": {"task_a": {
+        "suite": "libero_spatial", "task_id": 0, "pro_state_count": 6,
+        "train_state_ids": [0, 1], "validation_state_ids": [2, 3],
+        "test_state_ids": [4, 5],
+    }}}
+    protocol.write_text(json.dumps(protocol_data))
+    protocol_hash = hashlib.sha256(protocol.read_bytes()).hexdigest()
+    provenance = {
+        "task": {"task_key": "task_a", "task_suite": "libero_spatial", "task_id": 0,
+                 "instruction": "pick up the cube"},
+        "environment": {"adapter": "rl_vla.envs.libero_pro:make_env", "split": "train",
+                        "protocol_id": f"sha256:{protocol_hash}",
+                        "protocol_sha256": protocol_hash, "protocol_version": 2},
+        "demonstration": {"source_id": "demo-a", "source_split": "train"},
+    }
+    config = {
+        "policy": {"checkpoint": "unused", "model_config": "pi05_libero"},
+        "dice": {"selection_samples": 2, "selection_strategy": "max_q_min"},
+        "data": {"provenance": provenance},
+        "env": {"factory": "rl_vla.envs.libero_pro:make_env", "kwargs": {
+            "protocol": str(protocol), "task_key": "task_a", "split": "validation"}},
+    }
+
+    class Prior:
+        metadata: ClassVar = {"synthetic": True}
+        feature_dim, noise_dim, action_dim = 1, 1, 1
+
+        def __init__(self, *_args):
+            self.flow = SimpleNamespace()
+
+        def propose(self, _raw, count):
+            return (np.zeros((count, 1), np.float32), np.zeros((count, 1), np.float32),
+                    np.zeros((count, 1), np.float32), np.zeros((count, 1), np.float32))
+
+        def decode(self, _action, _full, _raw):
+            return np.zeros((1, 1), np.float32)
+
+    class Learner:
+        actor = SimpleNamespace(eval=lambda: None)
+        critics = SimpleNamespace(eval=lambda: None)
+
+        def __init__(self, *_args):
+            pass
+
+        def load_state_dict(self, _state):
+            pass
+
+        def select(self, _features, _noise, proposals, strategy):
+            assert strategy == "max_q_min"
+            return proposals[0], 0
+
+    class Env:
+        low, high = np.array([-1.0]), np.array([1.0])
+
+        def __init__(self):
+            self.state_ids = [2, 3]
+            self.index = 0
+
+        def reset(self, *, seed):
+            state_id = self.state_ids[self.index]
+            self.index += 1
+            return {"openpi": {"prompt": "pick up the cube"}}, {
+                "initial_state_id": state_id, "task_suite": "libero_spatial", "task_id": 0,
+            }
+
+        def step(self, _action):
+            return {"openpi": {"prompt": "pick up the cube"}}, 0.0, True, False, {
+                "is_success": False,
+            }
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(runner, "check", lambda _config: {"setup_ok": True})
+    monkeypatch.setattr(runner, "resource_check", lambda: None)
+    monkeypatch.setattr(evaluation, "torch", torch)
+    monkeypatch.setattr(policy_adapter, "FrozenPi05", Prior)
+    monkeypatch.setattr(core, "DICE", Learner)
+    monkeypatch.setattr(env_adapter, "make_primitive_env", lambda _config: Env())
+    monkeypatch.setattr(torch, "load", lambda *_args, **_kwargs: {
+        "format": "dice-pi05-v1", "config": config, "prior": Prior.metadata,
+        "learner": {},
+    })
+
+    baseline = evaluation.evaluate(config, tmp_path / "baseline", episodes=2, seed=100000)
+    trained = evaluation.evaluate(
+        config, tmp_path / "dice", checkpoint="synthetic.pt", episodes=2, seed=100000,
+    )
+    assert baseline["state_ids"] == [2, 3]
+    assert trained["state_ids"] == baseline["state_ids"]
+    assert baseline["test_results_used_for_selection"] is False
+    assert trained["test_results_used_for_selection"] is False
+
+
+def test_prepare_dice_pro_requires_explicit_protocol_and_task(tmp_path):
+    import importlib.util
+    import json
+    from pathlib import Path
+
+    script = Path(__file__).resolve().parents[1] / "scripts/prepare_dice_pro.py"
+    spec = importlib.util.spec_from_file_location("prepare_dice_pro", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    protocol = tmp_path / "protocol.json"
+    protocol.write_text(json.dumps({
+        "version": 2,
+        "tasks": {"task_a": {
+            "suite": "libero_spatial", "task_id": 0, "pro_state_count": 4,
+            "train_state_ids": [0, 1], "validation_state_ids": [2], "test_state_ids": [3],
+        }},
+    }))
+    outputs = module.prepare(
+        protocol, "task_a", tmp_path / "configs", "pick up the cube", "demo-a", "train",
+        tmp_path / "replay.mpk",
+    )
+    assert [Path(path).name for path in outputs] == ["train.toml", "validation.toml", "test.toml"]
+    assert all(Path(path).exists() for path in outputs)
+    with pytest.raises(FileExistsError):
+        module.prepare(
+            protocol, "task_a", tmp_path / "configs", "pick up the cube", "demo-a", "train",
+            tmp_path / "replay.mpk",
+        )
 
 
 def test_standalone_runner_with_synthetic_prior_and_environment(tmp_path, monkeypatch):
