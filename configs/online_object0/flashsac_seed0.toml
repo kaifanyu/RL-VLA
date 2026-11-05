@@ -1,0 +1,97 @@
+algorithm = "flashsac_pro_residual"
+experiment = "flashsac_object_0"
+output_dir = "runs/online_object0_explicit_output_required"
+
+[task]
+label = "Object 0"
+label_resolution = "user: RLDT object_0 = LIBERO Object task 0 (alphabet soup into basket); PRO Position variant"
+benchmark = "pro"
+suite = "libero_object"
+category = "Position"
+task_id = 0
+expected_case_id = "pro_libero_object_6b0ff024b794ff53"
+frozen_protocol = ""
+state_set = "/workspace/upenn/RL-VLA/runs/pro_state_sets/object_0_canonical_oct31"
+
+[contract]
+name = "libero_pro_object0_three_method_draft_v2"
+eval_seed_start = 100000
+train_reset = "seed_plus_episode"
+retention_env = "source_protocol"
+budget = "strict"
+states_sha256 = "9f4d57d3368a345730395ff5955b4c6c377ed01a3f17c607cbfbaa3523219af2"
+bddl_sha256 = "fb1a2a7457cb6b885366915d470c1837830eb0b2422634483bb34380e33acf95"
+base_parameter_sha256 = "a7b7519f90a435bbe01a8deb8757109a2433229f13e250fd54be894563f93480"
+fresh_uninterrupted = true
+
+[split]
+train = 100
+validation = 50
+test = 50
+retention_initial_states = 50
+
+[simulator]
+pro_python = "/workspace/upenn/RL-VLA/.venv-pro/bin/python"
+original_python = ".venv/bin/python"
+renderer = "osmesa"
+
+[base]
+checkpoint = "/workspace/upenn/RL-VLA/checkpoints/openpi/pi05_libero"
+model_config = "pi05_libero"
+action_horizon = 10
+execute_steps = 5
+noise_protocol = "jax-prngkey-split-normal-v1"
+backend = "pi05_flow"
+ode_steps = 10
+
+[residual]
+scale = [0.1, 0.1, 0.1, 0.05, 0.05, 0.05, 0.0]
+action_low = [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0]
+action_high = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+use_vlm_features = true
+eval_deterministic = true
+gamma = 0.99
+
+[flashsac]
+actor_num_blocks = 2
+actor_hidden_dim = 128
+critic_num_blocks = 2
+critic_hidden_dim = 256
+critic_num_bins = 101
+normalized_g_max = 5.0
+normalize_reward = true
+learning_rate = 0.0003
+learning_rate_end = 0.00015
+lr_decay_updates = 16000
+tau = 0.01
+actor_update_period = 2
+initial_temperature = 0.01
+target_sigma = 0.05
+initial_log_std = -3.0
+
+[train]
+seed = 0
+device = "auto"
+total_env_steps = 16000
+learning_starts = 2000
+batch_size = 256
+updates_per_step = 1
+replay_capacity = 100000
+log_every_steps = 200
+checkpoint_every_steps = 4000
+validate_every_steps = 4000
+validate_at_steps = [4000, 8000, 12000, 16000]
+validate_at_start = true
+validation_states = "all"
+save_replay = true
+torch_threads = 2
+max_gpu_memory_gib = 46.0
+max_gpu_temperature_c = 77.0
+max_workspace_gib = 2300.0
+
+[record]
+train_every_episodes = 25
+max_train_recordings = 8
+validation_videos = false
+policy_inputs = "npz"
+object_poses = true

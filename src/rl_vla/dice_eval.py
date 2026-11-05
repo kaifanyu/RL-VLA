@@ -32,7 +32,8 @@ def evaluation_contract(config):
     if provenance["task"]["task_key"] != kwargs["task_key"]:
         raise ValueError("Evaluation task key differs from configured task provenance")
     if (provenance["task"]["task_suite"], provenance["task"]["task_id"]) != (
-        task["suite"], task["task_id"]
+        task["suite"],
+        task["task_id"],
     ):
         raise ValueError("Evaluation task identity differs from protocol")
     if provenance["environment"]["protocol_sha256"] != protocol_sha256:
@@ -42,21 +43,27 @@ def evaluation_contract(config):
     if provenance["environment"]["split"] != "train":
         raise ValueError("Demonstration provenance must identify the train split")
     split = kwargs.get("split")
-    if split not in ("validation", "test"):
-        raise ValueError("DICE policy evaluation on LIBERO-PRO requires validation or test split")
+    if split not in ("validation", "test", "source"):
+        raise ValueError(
+            "DICE policy evaluation requires validation, test or source retention split"
+        )
     return kwargs, task[f"{split}_state_ids"], protocol_sha256, provenance
 
 
-def evaluate(config, output, *, checkpoint=None, episodes=50, seed=100000):
+def evaluate(config, output, *, checkpoint=None, episodes=50, seed=100000, diagnostic=False):
     from rl_vla.dice import check, resource_check, tensor
     from rl_vla.dice_core import DICE
     from rl_vla.dice_pi05 import FrozenPi05
     from rl_vla.rldt_env import make_primitive_env
 
+    checkpoint = str(checkpoint) if checkpoint is not None else None
     if episodes < 1 or seed < 0:
         raise ValueError("Evaluation requires positive episodes and nonnegative seed")
     kwargs, expected_state_ids, protocol_sha256, provenance = evaluation_contract(config)
-    if expected_state_ids is not None and episodes != len(expected_state_ids):
+    if expected_state_ids is not None and (
+        episodes > len(expected_state_ids)
+        or (not diagnostic and episodes != len(expected_state_ids))
+    ):
         raise ValueError(
             f"Requested {episodes} episodes, but {kwargs['split']} protocol has "
             f"{len(expected_state_ids)} states"
@@ -84,7 +91,7 @@ def evaluate(config, output, *, checkpoint=None, episodes=50, seed=100000):
     if value:
         if value["prior"] != prior.metadata:
             raise ValueError("Checkpoint normalization/prior fingerprint mismatch")
-        learner = DICE(prior.feature_dim, prior.noise_dim, prior.action_dim, config["dice"])
+        learner = DICE(prior.feature_dim, prior.noise_dim, prior.action_dim, config["dice"], **({"device": config["train"]["learner_device"]} if "learner_device" in config.get("train", {}) else {}))
         learner.load_state_dict(value["learner"])
         learner.actor.eval()
         learner.critics.eval()
@@ -93,20 +100,37 @@ def evaluate(config, output, *, checkpoint=None, episodes=50, seed=100000):
     try:
         for episode in range(episodes):
             raw, info = env.reset(seed=seed + episode)
+            if config.get("evaluation", {}).get("noise_protocol") == "per_episode_jax":
+                import jax
+
+                prior.key = jax.random.PRNGKey(seed + episode)
             if provenance is not None:
                 if raw["openpi"].get("prompt") != provenance["task"]["instruction"]:
-                    raise ValueError("Evaluation environment instruction differs from task provenance")
+                    raise ValueError(
+                        "Evaluation environment instruction differs from task provenance"
+                    )
                 if (info.get("task_suite"), info.get("task_id")) != (
-                    provenance["task"]["task_suite"], provenance["task"]["task_id"]
+                    provenance["task"]["task_suite"],
+                    provenance["task"]["task_id"],
                 ):
                     raise ValueError("Evaluation environment task identity differs from provenance")
             terminated = truncated = False
             total, steps, decisions, clipped = 0.0, 0, 0, 0
+            prior_seconds = selection_seconds = 0.0
+            candidates = 0
             started = time.monotonic()
             while not (terminated or truncated):
                 resource_check()
-                count = config["dice"]["selection_samples"] if learner else 1
+                count = (
+                    config.get("evaluation", {}).get("k", config["dice"]["selection_samples"])
+                    if learner
+                    else 1
+                )
+                query_started = time.monotonic()
                 f, z, p, full = prior.propose(raw, count)
+                prior_seconds += time.monotonic() - query_started
+                candidates += count
+                select_started = time.monotonic()
                 if learner:
                     # Always use the learned selection rule; no training warmup.
                     action, index = learner.select(
@@ -118,6 +142,7 @@ def evaluate(config, output, *, checkpoint=None, episodes=50, seed=100000):
                     action = action.numpy()
                 else:
                     action, index = p[0], 0
+                selection_seconds += time.monotonic() - select_started
                 for primitive in prior.decode(action, full[index], raw):
                     command = np.clip(primitive, env.low, env.high)
                     clipped += int(np.any(command != primitive))
@@ -141,10 +166,18 @@ def evaluate(config, output, *, checkpoint=None, episodes=50, seed=100000):
                 "primitive_steps": steps,
                 "controller_steps": steps,
                 "decisions": decisions,
+                "prior_candidates": candidates,
+                "prior_seconds": prior_seconds,
+                "selection_seconds": selection_seconds,
+                "candidate_expert_forward_equivalents": candidates
+                * config["dice"].get("ode_steps", 10),
                 "clipped_commands": clipped,
                 "seconds": time.monotonic() - started,
             }
-            if expected_state_ids is not None and row["initial_state_id"] != expected_state_ids[episode]:
+            if (
+                expected_state_ids is not None
+                and row["initial_state_id"] != expected_state_ids[episode]
+            ):
                 raise ValueError(
                     f"DICE evaluated state {row['initial_state_id']!r} at episode {episode}; "
                     f"protocol requires {expected_state_ids[episode]}"
@@ -168,9 +201,20 @@ def evaluate(config, output, *, checkpoint=None, episodes=50, seed=100000):
             "first_seed": seed,
             "state_ids": [row["initial_state_id"] for row in results],
             "protocol_sha256": protocol_sha256,
-            "selection_eligible": kwargs.get("split") == "validation",
+            "selection_eligible": kwargs.get("split") == "validation" and not diagnostic,
+            "diagnostic": diagnostic,
             "test_results_used_for_selection": False,
             "optimizer_updates": 0,
+            "inference_k": config.get("evaluation", {}).get(
+                "k", config["dice"]["selection_samples"]
+            )
+            if learner
+            else 1,
+            "prior_candidates": sum(r["prior_candidates"] for r in results),
+            "controller_steps": sum(r["controller_steps"] for r in results),
+            "seconds": sum(r["seconds"] for r in results),
+            "prior_seconds": sum(r["prior_seconds"] for r in results),
+            "selection_seconds": sum(r["selection_seconds"] for r in results),
             "config": config,
             "prior": prior.metadata,
         }

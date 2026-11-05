@@ -1,0 +1,18 @@
+{
+  "states": {
+    "path": "/workspace/upenn/RL-VLA/runs/vla_trace_objects_20261031/tasks/object_0/pro_states.npy",
+    "sha256": "9f4d57d3368a345730395ff5955b4c6c377ed01a3f17c607cbfbaa3523219af2"
+  },
+  "bddl": {
+    "path": "/workspace/upenn/RL-VLA/datasets/benchmark_assets/libero_pro/bddl_files/libero_object_swap/pick_up_the_alphabet_soup_and_place_it_in_the_basket.bddl",
+    "sha256": "fb1a2a7457cb6b885366915d470c1837830eb0b2422634483bb34380e33acf95"
+  },
+  "normalization": {
+    "path": "/workspace/upenn/RL-VLA/checkpoints/openpi/pi05_libero/assets/physical-intelligence/libero/norm_stats.json",
+    "sha256": "b3a44bb2810436fb62917decaea58bd4d9110255df527dea21e8fd40c960bd84"
+  },
+  "protocol": {
+    "path": "/workspace/upenn/RL-VLA/runs/vla_trace_objects_20261031/tasks/object_0/protocol.json",
+    "sha256": "a1e84a70c766c7ad74898b3bec9a12e272b1c326cb94a08cfaf0bc432e1bafa4"
+  }
+}

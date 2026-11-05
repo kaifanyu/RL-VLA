@@ -1,0 +1,56 @@
+{
+  "created_utc": "2026-11-05T16:39:47.791345+00:00",
+  "branch": "dice-fidelity-20261105",
+  "base_commit": "d0ef690c4f0d38463c7fdc1eee7aacae2194fcc3",
+  "official_code_commit": "98d936e52523878f0172e606ea32403176497100",
+  "source_files_sha256": {
+    "src/rl_vla/dice.py": "e0cf3f70050cf9da3079c7325ab7e73d2be52827b5532127025cf28950aef89d",
+    "src/rl_vla/dice_core.py": "9c8d7ccc326bae32733feb9253ec0d8b24f509243c81fe9522257d2fc3c5fe8b",
+    "src/rl_vla/dice_data.py": "05ee7c37e58280f1c9b4345e8407aec9cc58a6209ff1a890ce6300b20c06c862",
+    "src/rl_vla/dice_eval.py": "ebdea423c99f414ef4796c02830ce717cd27459070a093a7122b4cadd5403def",
+    "src/rl_vla/dice_pi05.py": "ffbec92cc68411aeac8057487d01a38006492f7059fb4bba2d8300de497dec3c",
+    "src/rl_vla/dice_replay.py": "76bcc0eb3fe5e093d9e9614de76940d4f16e7b65b7b8e7bc1c3ae2fc491cf0e7",
+    "src/rl_vla/dice_runtime.py": "62764f998f9c7d2be012d97b495398b33a3bda770c12d5e12c7a6c1eedf43428",
+    "src/rl_vla/dice_scheduler.py": "a010f1481ffd2634e9a2c0eda6d6ad016cdcd5fb0daa58a85a63f02ec3c26800",
+    "src/rl_vla/rldt_pi05.py": "900013be7a2a2a3b1612887e55ee6ed10d965b25f82d95acf40e3a0cd894cac5",
+    "src/rl_vla/rldt_env.py": "5d2e3a1e67504a9014258f4bc00f58131f5ff7580d1ac8aeb41e83a93a44597e",
+    "src/rl_vla/envs/libero.py": "17846e60fa1e61c8dd58e62c32dc5acb02fd9a41a3099c2f459d4c1509a6d3b8",
+    "src/rl_vla/envs/libero_pro.py": "a946ccb050171de10c32bc2bc97bcb2e62a462acba5d10f1264fa69d7cc6b372",
+    "scripts/run_dice.sh": "6cec5d0e2107e901d7fbd7f0263d45b38aab160272c5e57c451791ae8e2c0850",
+    "scripts/launch_dice_benchmark.py": "1cb759aa910b5c43ae81d5479cd72f3388e7b70ea1c5a8d8e5e1dadadce637af",
+    "scripts/verify_dice_smoke.py": "15a8c1689706a32fa6237e86e62c7fd05fbb15d12435437fd8afa565437b0f0a",
+    "tests/test_dice.py": "92c7bf9a670cc8366c2385ee821bafba35ebe11816399960a3483e9d515ece53",
+    "tests/test_dice_fidelity.py": "8e0699d6cca2b41214130657be325f40af4ca7979cdabcf05f93b7fb60d15e00",
+    "tests/test_rldt_pi05.py": "dc760243273c8ef6a4c9317eb64c9ab4ae821b6544ebeb388e97684dd1772b16",
+    "configs/dice_audit_pi05_object0.toml": "228b2779d0a80d0e13ef8dcd66890cb7bcadfaf387241848c139ef3e3e30a90b",
+    "configs/dice_bestof16_pi05_object0.toml": "a9b49bc07981e8e90c9ac9fe77651090c14a9946371abc32bbee88689877ed47",
+    "configs/dice_paper_pi05_object0.toml": "674e95f8d707b159fd6bb5bf9e09177b318762d2f1d31a0bb81200b6ea604b33"
+  },
+  "source_archive": "runs/dice_fidelity_20261105/source_snapshot.tar.gz",
+  "source_archive_sha256": "f4ae10112fe209681385badddced6ead6b0736b46e3710efb35c9154355c382c",
+  "audit_reports_read_sha256": {
+    "/workspace/smrithi/rl-vla-config-audit/report.md": "c5a57f58c2564bd4532107159fc43c3b6888773e35691fff61dd526ffece8d00",
+    "/workspace/smrithi/rl-vla-comparison-audit/report.md": "f84554cdb129896b994636b2d2b1d7f1fc7ecb69563de708f59026ccff83e73d",
+    "docs/flashsac_shared_contract.md": "878aba5806339d5ef26ae1a6bcbfd8ecb11c6661c207a39109bc73dda9c14a37"
+  },
+  "scope": "new DICE profiles and bounded diagnostic evidence; no production or exact reproduction claim",
+  "real_smoke_verification": "docs/dice-fidelity/smoke-verification.json",
+  "real_smoke_checkpoint_paths": [
+    "runs/dice_fidelity_20261105/final_first_v2/resume.pt",
+    "runs/dice_fidelity_20261105/final_resumed_v2/resume.pt"
+  ],
+  "final_smoke_counters": {
+    "episodes": 2,
+    "decisions": 4,
+    "updates": 6,
+    "controller_steps": 20,
+    "actor_updates": 4,
+    "target_updates": 4
+  },
+  "moment_and_all_rng_restore_equality_verified": true,
+  "finalized_utc": "2026-11-05T16:47:13.915651+00:00",
+  "targeted_tests_passed": 58,
+  "lint": "passed",
+  "benchmark_preflight": "setup_ok and training_data_ready",
+  "paper_preflight": "setup_ok; demonstration archive unavailable/unverified"
+}

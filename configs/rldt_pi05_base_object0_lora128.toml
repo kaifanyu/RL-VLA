@@ -1,0 +1,61 @@
+algorithm = "rldt"
+
+[policy]
+kind = "pi05"
+checkpoint = "checkpoints/openpi/pi05_base"
+model_config = "pi05_base"
+observation_action_adapter = "libero"
+# Calibration statistics only; model weights all come from pi05_base.
+normalization_assets = "checkpoints/openpi/pi05_libero/assets"
+projection_only = false
+lora_rank = 128
+lora_alpha = 128.0
+lora_seed = 0
+
+[env]
+kind = "external"
+factory = "rl_vla.envs.libero_pro:make_env"
+python = ".venv-pro/bin/python"
+
+[env.kwargs]
+protocol = "runs/vla_trace_objects_20261031/tasks/object_0/protocol.json"
+task_key = "object_0"
+split = "train"
+
+[train]
+seed = 0
+iterations = 100
+collect_decisions = 32
+critic_steps = 64
+actor_steps = 4
+critic_batch_size = 64
+actor_batch_size = 1
+critic_trajectories = 2
+replay_capacity = 4096
+save_every = 25
+
+[rldt]
+ode_steps = 10
+execute_steps = 5
+particles = 8
+kappa0 = 0.001
+kernel_mode = "official"
+reference = "moving"
+consistency_weight = 0.5
+constraint_weight = 0.2
+actor_lr = 0.00002
+actor_warmup_steps = 32
+max_grad_norm = 1.0
+critic_lr = 0.001
+critic_width = 256
+critic_warmup_iterations = 2
+target_momentum = 0.995
+gamma = 0.999
+td_lambda = 0.5
+bootstrap_samples = 2
+clip_bootstrap = true
+balanced_replay = true
+fresh_fraction = 0.33
+
+[recording]
+enabled = true

@@ -4,6 +4,8 @@ import argparse
 import copy
 import json
 import math
+import itertools
+import pickle
 import subprocess
 import time
 import tomllib
@@ -34,6 +36,10 @@ def load_config(path):
             raise ValueError(f"Missing [{section}]")
     if config["policy"]["kind"] not in {"toy", "pi05"}:
         raise ValueError("policy.kind must be toy or pi05")
+    if config["policy"]["kind"] == "pi05":
+        from rl_vla.rldt_lora import lora_settings
+
+        lora_settings(config["policy"])
     for name in ("iterations", "collect_decisions", "critic_steps", "actor_steps",
                  "critic_batch_size", "actor_batch_size", "critic_trajectories",
                  "replay_capacity", "save_every"):
@@ -74,6 +80,10 @@ def load_config(path):
 
 def make_flow(config):
     if config["kind"] == "pi05":
+        if config.get("lora_target") == "vlm":
+            from rl_vla.rldt_vlm_lora import VlmLoraFlow
+
+            return VlmLoraFlow.from_config(config)
         from rl_vla.rldt_pi05 import Pi05Flow
 
         return Pi05Flow.from_config(config)
@@ -180,8 +190,12 @@ class Learner:
         batch = x.shape[0] // self.k
 
         def loss_fn(p):
-            v = self.flow.velocity(p, context, x, times, frozen=frozen)
-            cv = self.flow.velocity(p, context, constraint_x, constraint_t, frozen=frozen)
+            # Learned VLM prefixes must be recomputed INSIDE differentiation.
+            # Share one prefix between the transport and constraint velocities.
+            actor_context = (self.flow.policy_context(p, context, frozen=frozen)
+                             if hasattr(self.flow, "policy_context") else context)
+            v = self.flow.velocity(p, actor_context, x, times, frozen=frozen)
+            cv = self.flow.velocity(p, actor_context, constraint_x, constraint_t, frozen=frozen)
             shape = (batch, self.k, self.flow.horizon, self.flow.action_dim)
             return actor_loss(
                 v.reshape(shape), x.reshape(shape), times.reshape(batch, self.k),
@@ -273,7 +287,10 @@ class Learner:
         if manifest_path.exists() and hasattr(self.flow, "metadata"):
             saved = json.loads(manifest_path.read_text()).get("policy_metadata", {})
             for key in ("model_config", "projection_only", "checkpoint_metadata_sha256",
-                        "checkpoint_manifest_sha256", "normalization_assets_sha256"):
+                        "checkpoint_manifest_sha256", "normalization_assets_sha256",
+                        "lora_rank", "lora_alpha", "lora_seed", "lora_targets",
+                        "lora_parameterization", "observation_action_adapter",
+                        "discrete_state_input"):
                 if saved.get(key) != self.flow.metadata.get(key):
                     raise ValueError(f"Warm-start base checkpoint {key} does not match")
         template, tree = jax.tree.flatten(self.state())
@@ -288,13 +305,33 @@ class Learner:
          self.actor_opt, self.q_opt, self.key) = jax.tree.unflatten(tree, leaves)
 
 
-def execute_chunk(env, actions, gamma, *, record_step=None):
+def save_replay_state(directory, replay, rng, counters, pending=None):
+    path = Path(directory) / "replay.pkl"
+    temporary = path.with_suffix(".tmp")
+    with temporary.open("xb") as stream:
+        pickle.dump({"replay": replay, "numpy_rng": rng.bit_generator.state,
+                     "counters": dict(counters), "pending": pending,
+                     "simulator_continuation": False}, stream, protocol=5)
+    temporary.replace(path)
+
+
+def restore_replay_state(directory, rng):
+    # Trusted local diagnostic restoration, never a benchmark attempt restart.
+    with (Path(directory) / "replay.pkl").open("rb") as stream:
+        value = pickle.load(stream)
+    rng.bit_generator.state = value["numpy_rng"]
+    return value
+
+
+def execute_chunk(env, actions, gamma, *, record_step=None, before_step=None, after_step=None):
     actions = np.asarray(actions, np.float32)
     if not np.isfinite(actions).all():
         raise FloatingPointError("Nonfinite policy actions")
     reward, raw_return = 0., 0.
     for i, action in enumerate(actions):
         executed_action = np.clip(action, env.low, env.high)
+        if before_step is not None:
+            before_step()  # Literal guard immediately before every training command.
         raw, r, terminated, truncated, info = env.step(executed_action)
         if not np.isfinite(r):
             raise FloatingPointError("Nonfinite environment reward")
@@ -304,6 +341,8 @@ def execute_chunk(env, actions, gamma, *, record_step=None):
         raw_return += r
         if record_step is not None:
             record_step(executed_action, raw, r, terminated, truncated, info)
+        if after_step is not None:
+            after_step(i + 1, raw, r, terminated, truncated, info)
         if terminated or truncated:
             break
     count = i + 1
@@ -314,17 +353,25 @@ def execute_chunk(env, actions, gamma, *, record_step=None):
 
 
 def train(config, output, init_from=None):
+    from rl_vla.attempt_accounting import reject_restart
+    reject_restart(config, init_from)
     out = Path(output)
     out.mkdir(parents=True, exist_ok=False)
     write_json(out / "config.json", config)
+    startup_started = time.monotonic()
     print("Loading flow policy...", flush=True)
     flow = make_flow(config["policy"])
     settings, r = config["train"], config["rldt"]
     seed = int(settings["seed"])
+    command_cap = settings.get("max_controller_commands")
+    milestones = settings.get("command_milestones", [])
+    if command_cap is not None and (command_cap < 1 or milestones != sorted(set(milestones)) or any(x < 0 or x > command_cap for x in milestones)):
+        raise ValueError("Invalid controller-command budget/milestones")
     print("Starting primitive environment...", flush=True)
     env = make_primitive_env(config["env"])
     start = time.monotonic()
     validation_seconds = 0.0
+    stage_times = dict(collection=0., critic_targets=0., critic_updates=0., actor_updates=0., snapshot_io=0.)
     counters = {"iterations": 0, "decisions": 0, "primitive_steps": 0,
                 "episodes": 0, "successes": 0, "actor_updates": 0, "critic_updates": 0}
     recorder = None
@@ -344,7 +391,8 @@ def train(config, output, init_from=None):
         manifest = {"config": config, "jax": jax.__version__,
                     "devices": [str(d) for d in jax.devices()], "init_from": init_from,
                     "trainable_parameters": sum(x.size for x in jax.tree.leaves(learner.params)),
-                    "frozen_vlm": config["policy"]["kind"] == "pi05",
+                    "frozen_vlm": (config["policy"]["kind"] == "pi05"
+                                   and config["policy"].get("lora_target") != "vlm"),
                     "policy_metadata": getattr(flow, "metadata", {}),
                     "paper": "rldt.pdf", "official_reference_commit":
                     "3ab73e775efd0f041ad28170c616146be86bb6ea"}
@@ -361,11 +409,53 @@ def train(config, output, init_from=None):
             })
         replay = TrajectoryReplay(int(settings["replay_capacity"]), seed)
         rng = np.random.default_rng(seed)
+        def snapshot(step, pending=None):
+            snapshot_started = time.monotonic()
+            destination = out / f"step_{step:06d}"
+            temporary = destination.with_name(destination.name + ".tmp")
+            # Inference-only milestone; no optimizer/replay duplication. Live
+            # chunk/episode and RNG stay untouched. Recovery is saved separately.
+            flow.save(temporary, learner.params)
+            write_json(temporary / "snapshot.json", {
+                "controller_commands": step, "counters": dict(counters),
+                "phase": "post_command_pre_chunk_replay_and_updates",
+                "pending": pending, "simulator_continuation": False,
+                "checkpoint_role": "inference_selection_only",
+            })
+            temporary.rename(destination)
+            stage_times["snapshot_io"] += time.monotonic() - snapshot_started
+
+        stage_times["startup_before_snapshots"] = time.monotonic() - startup_started
+        if 0 in milestones:
+            snapshot(0)
+
+        def before_command():
+            if command_cap is not None and counters["primitive_steps"] >= command_cap:
+                raise RuntimeError("Controller-command cap reached before env.step")
+
+        def after_command(offset, observation, reward, terminated, truncated, info):
+            counters["primitive_steps"] += 1
+            if counters["primitive_steps"] in milestones:
+                snapshot(counters["primitive_steps"], {
+                    "chunk_executed_commands": offset,
+                    "episode_executed_commands": episode_steps + offset,
+                    "completed_pending_segment_decisions": len(segment),
+                    "terminated": bool(terminated), "truncated": bool(truncated),
+                    "handling": "live chunk and episode retained; transition appended after chunk returns",
+                })
+
         with (out / "metrics.jsonl").open("w") as log, (out / "episodes.jsonl").open("w") as episodes_log:
-            for iteration in range(1, int(settings["iterations"]) + 1):
+            for iteration in itertools.count(1):
+                if command_cap is None and iteration > int(settings["iterations"]):
+                    break
+                if command_cap is not None and counters["primitive_steps"] >= command_cap:
+                    break
                 print(f"RLDT iteration {iteration}: collecting rollouts", flush=True)
+                collection_started = time.monotonic()
                 fresh, segment = [], []
                 for _ in range(int(settings["collect_decisions"])):
+                    if command_cap is not None and counters["primitive_steps"] >= command_cap:
+                        break
                     if recorder is not None and not recorder.active:
                         recorder.start_episode(raw, {
                             "episode": counters["episodes"] + 1,
@@ -375,7 +465,8 @@ def train(config, output, init_from=None):
                     sample_key = learner.next_key()
                     actions, _ = learner.sample(learner.params, context, sample_key)
                     decoded_actions = flow.decode(actions, [raw])[0]
-                    motor_actions = decoded_actions[:learner.execute]
+                    remaining = learner.execute if command_cap is None else min(learner.execute, command_cap - counters["primitive_steps"])
+                    motor_actions = decoded_actions[:remaining]
                     if recorder is not None:
                         recorder.begin_chunk(raw, np.asarray(actions)[0], decoded_actions, {
                             "iteration": iteration, "decision": counters["decisions"],
@@ -385,7 +476,8 @@ def train(config, output, init_from=None):
                         })
                     following, reward, terminated, truncated, info = execute_chunk(
                         env, motor_actions, float(r["gamma"]),
-                        record_step=recorder.record_step if recorder is not None else None)
+                        record_step=recorder.record_step if recorder is not None else None,
+                        before_step=before_command, after_step=after_command)
                     if recorder is not None:
                         recorder.end_chunk({"discounted_reward": reward, "info": info})
                     segment.append({"obs": raw, "next_obs": following,
@@ -394,7 +486,6 @@ def train(config, output, init_from=None):
                         "discount": info["discount"], "terminated": terminated,
                         "truncated": truncated, "executed_steps": info["executed_steps"]})
                     counters["decisions"] += 1
-                    counters["primitive_steps"] += info["executed_steps"]
                     episode_steps += info["executed_steps"]
                     episode_return += info["raw_return"]
                     if terminated or truncated:
@@ -418,6 +509,7 @@ def train(config, output, init_from=None):
                         raw, reset_info = env.reset(seed=seed + counters["episodes"])
                     else:
                         raw = following
+                stage_times["collection"] += time.monotonic() - collection_started
                 if segment:
                     replay.add(segment)
                     fresh.append(segment)
@@ -425,7 +517,11 @@ def train(config, output, init_from=None):
                     balanced=r.get("balanced_replay", True), fresh=fresh,
                     fresh_fraction=float(r.get("fresh_fraction", .33)))
                 print(f"RLDT iteration {iteration}: preparing critic targets", flush=True)
+                target_started = time.monotonic()
                 data = learner.critic_data(segments)
+                jax.block_until_ready(data)
+                stage_times["critic_targets"] += time.monotonic() - target_started
+                update_started = time.monotonic()
                 metrics = {}
                 for _ in range(int(settings["critic_steps"])):
                     indices = jnp.asarray(rng.integers(
@@ -433,6 +529,9 @@ def train(config, output, init_from=None):
                     learner.q, learner.target_q, learner.q_opt, metrics = learner._critic_update(
                         learner.q, learner.target_q, learner.q_opt, data, indices)
                     counters["critic_updates"] += 1
+                jax.block_until_ready(metrics)
+                stage_times["critic_updates"] += time.monotonic() - update_started
+                actor_started = time.monotonic()
                 if iteration > int(r.get("critic_warmup_iterations", 2)):
                     print(f"RLDT iteration {iteration}: updating flow policy", flush=True)
                     rows = [row for seg in segments for row in seg]
@@ -441,6 +540,8 @@ def train(config, output, init_from=None):
                             len(rows), size=int(settings["actor_batch_size"]))]
                         metrics = metrics | learner.actor_step(observations)
                         counters["actor_updates"] += 1
+                jax.block_until_ready(metrics)
+                stage_times["actor_updates"] += time.monotonic() - actor_started
                 if r.get("reference", "moving") == "moving":
                     learner.reference = jax.tree.map(lambda x: x.copy(), learner.params)
                 metrics = {k: float(v) for k, v in metrics.items()}
@@ -449,21 +550,26 @@ def train(config, output, init_from=None):
                 counters["iterations"] = iteration
                 record = counters | {"elapsed_seconds": time.monotonic() - start - validation_seconds,
                                       "checkpoint_validation_seconds": validation_seconds,
-                                      "replay_decisions": replay.size, "metrics": metrics}
+                                      "replay_decisions": replay.size, "metrics": metrics, "stage_seconds": dict(stage_times)}
                 log.write(json.dumps(record, allow_nan=False) + "\n")
                 log.flush()
                 print(json.dumps(record, allow_nan=False), flush=True)
-                if iteration % int(settings["save_every"]) == 0:
+                if command_cap is None and iteration % int(settings["save_every"]) == 0:
                     learner.save(out / f"iteration_{iteration:06d}")
                     from rl_vla.checkpoint_validation import run_checkpoint_validation
 
                     validation_seconds += run_checkpoint_validation(
                         out, out / f"iteration_{iteration:06d}", iteration, record, "rldt")
         learner.save(out / "final")
+        if command_cap is not None:
+            if counters["primitive_steps"] != command_cap:
+                raise RuntimeError("Training ended before its exact command budget")
+            save_replay_state(out / "final", replay, rng, counters,
+                              {"episode_steps": episode_steps, "episode_return": episode_return})
         summary = counters | {"elapsed_seconds": time.monotonic() - start - validation_seconds,
                               "wall_elapsed_seconds": time.monotonic() - start,
                               "checkpoint_validation_seconds": validation_seconds,
-                              "checkpoint": str(out / "final")}
+                              "checkpoint": str(out / "final"), "stage_seconds": stage_times}
         if recorder is not None:
             summary["trajectories"] = str(recorder.directory)
         write_json(out / "summary.json", summary)
@@ -587,10 +693,18 @@ def main():
     parser.add_argument("--particles", type=int, help="Override SVGD particle count (at least 2)")
     parser.add_argument("--episodes", type=int, default=5)
     parser.add_argument("--seed", type=int, default=100000)
+    parser.add_argument("--env-split", choices=["validation", "test", "source", "heldout"],
+                        help="Evaluation split for the LIBERO-PRO protocol")
     parser.add_argument("--record-episodes", type=int, default=0,
                         help="Save LIBERO policy-camera videos for the first N evaluation episodes")
     args = parser.parse_args()
     config = load_config(args.config)
+    if args.env_split:
+        if args.command != "evaluate" or (
+            config["env"].get("factory") != "rl_vla.envs.libero_pro:make_env"
+        ):
+            parser.error("--env-split requires evaluate with the LIBERO-PRO environment")
+        config["env"]["kwargs"]["split"] = args.env_split
     if args.smoke:
         config = copy.deepcopy(config)
         config["train"].update(iterations=1, collect_decisions=2, critic_steps=1, actor_steps=1,
@@ -605,6 +719,8 @@ def main():
         result = {"devices": [str(d) for d in jax.devices()], "horizon": flow.horizon,
                   "internal_action_dim": flow.action_dim, "motor_dim": flow.motor_dim,
                   "trainable_parameters": sum(x.size for x in jax.tree.leaves(flow.params))}
+        if hasattr(flow, "metadata"):
+            result["policy_metadata"] = flow.metadata
     else:
         if not args.output:
             parser.error("--output is required")

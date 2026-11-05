@@ -1,0 +1,75 @@
+{
+  "first": "runs/dice_fidelity_20261105/final_first_v2/resume.pt",
+  "resumed": "runs/dice_fidelity_20261105/final_resumed_v2/resume.pt",
+  "first_counters": {
+    "episodes": 1,
+    "decisions": 2,
+    "updates": 2,
+    "controller_steps": 10,
+    "actor_updates": 2,
+    "target_updates": 2
+  },
+  "resumed_counters": {
+    "episodes": 2,
+    "decisions": 4,
+    "updates": 6,
+    "controller_steps": 20,
+    "actor_updates": 4,
+    "target_updates": 4
+  },
+  "replay_rows": [
+    2,
+    4
+  ],
+  "frozen_features_noise_actions_bitwise_equal_after_update": true,
+  "native_zero_residual_decode_equal": true,
+  "best_of_16_index_matches_min_ensemble_oracle": true,
+  "optimizer_moments_and_steps_restored": true,
+  "restored_optimizer_tensors_and_numpy_torch_jax_rng_equal_saved": true,
+  "post_restore_additional_update": {
+    "critic_loss": 1.1324821710586548,
+    "actor_loss": 0.3942147493362427,
+    "regularization_fraction": 1.0,
+    "q_minus_return": -0.3929011821746826,
+    "target_mean": 0.0,
+    "updates": 7,
+    "actor_updates": 5,
+    "target_updates": 5
+  },
+  "prior": {
+    "backend": "openpi-jax-pi05",
+    "model_config": "pi05_libero",
+    "checkpoint": "/workspace/upenn/RL-VLA/checkpoints/openpi/pi05_libero",
+    "projection_only": false,
+    "horizon": 10,
+    "action_dim": 32,
+    "motor_dim": 7,
+    "critic_feature_dim": 2080,
+    "trainable_parameters": 430098464,
+    "frozen_parameters": 2923335408,
+    "flow_time_convention": "noise_at_1_data_at_0; x_next=x-v/T",
+    "feature_extractor": "masked_mean_final_vlm_hidden+normalized_padded_state",
+    "checkpoint_metadata_sha256": "303a4e354814928e1d29b75e310f2c1ac7e7e29b62f48395b631045ca1cffc73",
+    "checkpoint_manifest_sha256": "65246951e69bd2b5118e609646bc9e8c439229bccbc1325643833aeb74f77104",
+    "normalization_assets_sha256": "22ded0023b41f5601c00371922177feb23fa337f783884740d60562466b1111d",
+    "method": "dice-pi05-residual",
+    "prior_frozen": true,
+    "action_coordinates": "normalized-executed-prefix",
+    "execute_steps": 5
+  },
+  "sources": {
+    "src/rl_vla/dice_pi05.py": "ffbec92cc68411aeac8057487d01a38006492f7059fb4bba2d8300de497dec3c",
+    "src/rl_vla/dice_eval.py": "ebdea423c99f414ef4796c02830ce717cd27459070a093a7122b4cadd5403def",
+    "src/rl_vla/dice_scheduler.py": "a010f1481ffd2634e9a2c0eda6d6ad016cdcd5fb0daa58a85a63f02ec3c26800",
+    "src/rl_vla/dice_replay.py": "76bcc0eb3fe5e093d9e9614de76940d4f16e7b65b7b8e7bc1c3ae2fc491cf0e7",
+    "src/rl_vla/dice_runtime.py": "62764f998f9c7d2be012d97b495398b33a3bda770c12d5e12c7a6c1eedf43428",
+    "src/rl_vla/dice_core.py": "9c8d7ccc326bae32733feb9253ec0d8b24f509243c81fe9522257d2fc3c5fe8b",
+    "src/rl_vla/dice.py": "e0cf3f70050cf9da3079c7325ab7e73d2be52827b5532127025cf28950aef89d",
+    "src/rl_vla/dice_data.py": "219afb8c0260183e6316d7a0a26159a6351da6f8e3a9e915d725e53f1ceb80da",
+    "src/rl_vla/rldt_pi05.py": "900013be7a2a2a3b1612887e55ee6ed10d965b25f82d95acf40e3a0cd894cac5",
+    "src/rl_vla/rldt_env.py": "5d2e3a1e67504a9014258f4bc00f58131f5ff7580d1ac8aeb41e83a93a44597e",
+    "src/rl_vla/envs/libero.py": "17846e60fa1e61c8dd58e62c32dc5acb02fd9a41a3099c2f459d4c1509a6d3b8",
+    "src/rl_vla/envs/libero_pro.py": "a946ccb050171de10c32bc2bc97bcb2e62a462acba5d10f1264fa69d7cc6b372"
+  },
+  "scope": "real pi0.5; two shortened LIBERO episodes; online-only smoke ablation; no performance claim"
+}

@@ -35,7 +35,8 @@ class RoboCasaEnv(gym.Env):
     """
 
     def __init__(self, *, task_id=TASK_ID, split="target", max_steps=None,
-                 image_size=224, seed=0, randomize_cameras=False):
+                 image_size=224, seed=0, randomize_cameras=False,
+                 obj_groups="all", expected_prompt=None):
         super().__init__()
         if task_id != TASK_ID:
             raise ValueError(f"Only the requested task {TASK_ID} is configured")
@@ -52,6 +53,8 @@ class RoboCasaEnv(gym.Env):
         self.native_camera_size = 256  # Official RoboCasa Gym/OpenPI evaluation pipeline.
         self.initial_seed = int(seed)
         self.randomize_cameras = bool(randomize_cameras)
+        self.obj_groups = obj_groups
+        self.expected_prompt = expected_prompt
         self.native = None
         self.steps = 0
         self._needs_reset = True
@@ -94,6 +97,7 @@ class RoboCasaEnv(gym.Env):
             "control_frequency_hz": 20, "max_episode_steps": self.max_steps,
             "layout_id": meta.get("layout_id"), "style_id": meta.get("style_id"),
             "task_prompt": meta.get("lang"),
+            "target_object_group": self.obj_groups,
         }
 
     def reset(self, *, seed=None, options=None):
@@ -112,9 +116,12 @@ class RoboCasaEnv(gym.Env):
             self.task_id, split=self.split, seed=self._episode_seed,
             camera_widths=self.native_camera_size, camera_heights=self.native_camera_size,
             randomize_cameras=self.randomize_cameras,
+            obj_groups=self.obj_groups,
             disable_env_checker=True,
         )
         raw, info = self.native.reset(seed=self._episode_seed)
+        if self.expected_prompt is not None and raw["annotation.human.task_description"] != self.expected_prompt:
+            raise RuntimeError("Native task prompt differs from the requested object/task")
         success = bool(self.native.unwrapped.env._check_success())
         if success:
             raise RuntimeError("Task is already successful at reset")

@@ -1,0 +1,38 @@
+[
+  {
+    "checkpoint": "runs/dice_fidelity_20261105/final_resumed/final.pt",
+    "inference_k": 1,
+    "episodes": 2,
+    "state_ids": [
+      100,
+      101
+    ],
+    "controller_steps": 20,
+    "prior_candidates": 4,
+    "seconds": 22.838707548973616,
+    "prior_seconds": 11.193410137027968,
+    "selection_seconds": 0.15875726798549294,
+    "selection_eligible": false,
+    "diagnostic": true,
+    "checkpoint_sha256": "4b3b759136fa5d1391657fc1ee42eb4be1bf70d73424e9fd93fd7fd3e16b64de",
+    "expert_forward_equivalents": 40
+  },
+  {
+    "checkpoint": "runs/dice_fidelity_20261105/final_resumed/final.pt",
+    "inference_k": 16,
+    "episodes": 2,
+    "state_ids": [
+      100,
+      101
+    ],
+    "controller_steps": 20,
+    "prior_candidates": 64,
+    "seconds": 22.070831532997545,
+    "prior_seconds": 12.431745473993942,
+    "selection_seconds": 0.22313553898129612,
+    "selection_eligible": false,
+    "diagnostic": true,
+    "checkpoint_sha256": "4b3b759136fa5d1391657fc1ee42eb4be1bf70d73424e9fd93fd7fd3e16b64de",
+    "expert_forward_equivalents": 640
+  }
+]

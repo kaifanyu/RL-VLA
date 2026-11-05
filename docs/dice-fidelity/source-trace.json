@@ -1,0 +1,517 @@
+{
+  "entry_point": "https://zhanyisun.github.io/dice.rl.2026/",
+  "paper": "https://arxiv.org/pdf/2603.10263v2",
+  "simulation_link": "https://github.com/zhanyisun/dice-rl.git",
+  "canonical_repository": "https://github.com/real-stanford/dice-rl",
+  "commit": "98d936e52523878f0172e606ea32403176497100",
+  "verified_remote_HEAD": "98d936e52523878f0172e606ea32403176497100",
+  "functions": {
+    "model/rl/distill_residual_rl.py": {
+      "sha256": "deb9b4dd1913855959d95043c2e21507c2c8c53ac9fc79f0e924e3447b92ab76",
+      "functions": [
+        {
+          "function": "__init__",
+          "line": 31,
+          "end_line": 62,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl.py#L31-L62"
+        },
+        {
+          "function": "forward",
+          "line": 64,
+          "end_line": 89,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl.py#L64-L89"
+        },
+        {
+          "function": "__init__",
+          "line": 98,
+          "end_line": 147,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl.py#L98-L147"
+        },
+        {
+          "function": "forward",
+          "line": 149,
+          "end_line": 202,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl.py#L149-L202"
+        },
+        {
+          "function": "return_both",
+          "line": 204,
+          "end_line": 206,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl.py#L204-L206"
+        },
+        {
+          "function": "__init__",
+          "line": 218,
+          "end_line": 354,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl.py#L218-L354"
+        },
+        {
+          "function": "_load_pretrained_policy",
+          "line": 356,
+          "end_line": 500,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl.py#L356-L500"
+        },
+        {
+          "function": "update_target_networks",
+          "line": 502,
+          "end_line": 511,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl.py#L502-L511"
+        },
+        {
+          "function": "get_exploration_action",
+          "line": 514,
+          "end_line": 625,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl.py#L514-L625"
+        },
+        {
+          "function": "actor_loss",
+          "line": 627,
+          "end_line": 838,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl.py#L627-L838"
+        },
+        {
+          "function": "critic_loss",
+          "line": 840,
+          "end_line": 916,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl.py#L840-L916"
+        },
+        {
+          "function": "get_action",
+          "line": 918,
+          "end_line": 952,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl.py#L918-L952"
+        },
+        {
+          "function": "loss",
+          "line": 954,
+          "end_line": 1051,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl.py#L954-L1051"
+        }
+      ]
+    },
+    "model/rl/distill_residual_rl_img.py": {
+      "sha256": "fc2436d33703b664e0627eede51edf720457d4b4cb854c4237fdf7111bf98cad",
+      "functions": [
+        {
+          "function": "__init__",
+          "line": 37,
+          "end_line": 64,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl_img.py#L37-L64"
+        },
+        {
+          "function": "_load_pretrained_policy",
+          "line": 66,
+          "end_line": 87,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl_img.py#L66-L87"
+        },
+        {
+          "function": "get_action",
+          "line": 89,
+          "end_line": 131,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl_img.py#L89-L131"
+        },
+        {
+          "function": "get_exploration_action",
+          "line": 133,
+          "end_line": 243,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl_img.py#L133-L243"
+        },
+        {
+          "function": "actor_loss",
+          "line": 245,
+          "end_line": 454,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/rl/distill_residual_rl_img.py#L245-L454"
+        }
+      ]
+    },
+    "model/common/mlp.py": {
+      "sha256": "19c22ab88c6f3e5213b3d78af409d8a94ac5ae48d3e2bd071ec8848840bdb6c1",
+      "functions": [
+        {
+          "function": "__init__",
+          "line": 29,
+          "end_line": 75,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/common/mlp.py#L29-L75"
+        },
+        {
+          "function": "forward",
+          "line": 77,
+          "end_line": 82,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/common/mlp.py#L77-L82"
+        },
+        {
+          "function": "__init__",
+          "line": 93,
+          "end_line": 119,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/common/mlp.py#L93-L119"
+        },
+        {
+          "function": "forward",
+          "line": 121,
+          "end_line": 124,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/common/mlp.py#L121-L124"
+        },
+        {
+          "function": "__init__",
+          "line": 128,
+          "end_line": 140,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/common/mlp.py#L128-L140"
+        },
+        {
+          "function": "forward",
+          "line": 142,
+          "end_line": 150,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/model/common/mlp.py#L142-L150"
+        }
+      ]
+    },
+    "agent/finetune/train_distill_residual_flow_agent.py": {
+      "sha256": "e2c0675867bcd8fd977c02292bc9f0ea62cc8d2a5131b71e7dd8e523fafe3587",
+      "functions": [
+        {
+          "function": "__init__",
+          "line": 27,
+          "end_line": 140,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L27-L140"
+        },
+        {
+          "function": "_init_eval_csv",
+          "line": 142,
+          "end_line": 148,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L142-L148"
+        },
+        {
+          "function": "_log_eval_to_csv",
+          "line": 150,
+          "end_line": 163,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L150-L163"
+        },
+        {
+          "function": "_setup_replay_buffer",
+          "line": 165,
+          "end_line": 198,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L165-L198"
+        },
+        {
+          "function": "get_current_expert_ratio",
+          "line": 200,
+          "end_line": 222,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L200-L222"
+        },
+        {
+          "function": "collect_transition",
+          "line": 224,
+          "end_line": 279,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L224-L279"
+        },
+        {
+          "function": "update_networks",
+          "line": 281,
+          "end_line": 407,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L281-L407"
+        },
+        {
+          "function": "get_action",
+          "line": 409,
+          "end_line": 444,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L409-L444"
+        },
+        {
+          "function": "evaluate",
+          "line": 446,
+          "end_line": 587,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L446-L587"
+        },
+        {
+          "function": "_get_flow_action_for_eval",
+          "line": 589,
+          "end_line": 609,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L589-L609"
+        },
+        {
+          "function": "evaluate_pretrained_flow_policy",
+          "line": 611,
+          "end_line": 716,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L611-L716"
+        },
+        {
+          "function": "extract_expert_trajectories",
+          "line": 718,
+          "end_line": 763,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L718-L763"
+        },
+        {
+          "function": "create_trajectory_visualization",
+          "line": 765,
+          "end_line": 869,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L765-L869"
+        },
+        {
+          "function": "run",
+          "line": 871,
+          "end_line": 1054,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L871-L1054"
+        },
+        {
+          "function": "save_model",
+          "line": 1056,
+          "end_line": 1076,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L1056-L1076"
+        },
+        {
+          "function": "load",
+          "line": 1078,
+          "end_line": 1101,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L1078-L1101"
+        },
+        {
+          "function": "_setup_upsampling_wrapper",
+          "line": 1103,
+          "end_line": 1150,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L1103-L1150"
+        },
+        {
+          "function": "_fix_wrapper_interpolations",
+          "line": 1152,
+          "end_line": 1165,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_agent.py#L1152-L1165"
+        }
+      ]
+    },
+    "agent/finetune/train_distill_residual_flow_img_agent.py": {
+      "sha256": "d5650211bab3cd685f90ab735022d7b39e63392a838c5e4cfd36749d5bcf64dc",
+      "functions": [
+        {
+          "function": "__init__",
+          "line": 34,
+          "end_line": 141,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_img_agent.py#L34-L141"
+        },
+        {
+          "function": "_setup_replay_buffer",
+          "line": 143,
+          "end_line": 180,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_img_agent.py#L143-L180"
+        },
+        {
+          "function": "_preprocess_expert_dataset",
+          "line": 182,
+          "end_line": 294,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_img_agent.py#L182-L294"
+        },
+        {
+          "function": "_extract_visual_features_from_obs",
+          "line": 296,
+          "end_line": 346,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_img_agent.py#L296-L346"
+        },
+        {
+          "function": "get_action",
+          "line": 348,
+          "end_line": 379,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_img_agent.py#L348-L379"
+        },
+        {
+          "function": "collect_transition",
+          "line": 381,
+          "end_line": 436,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_img_agent.py#L381-L436"
+        },
+        {
+          "function": "_get_flow_action_for_eval",
+          "line": 438,
+          "end_line": 478,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/finetune/train_distill_residual_flow_img_agent.py#L438-L478"
+        }
+      ]
+    },
+    "util/hybrid_replay_buffer.py": {
+      "sha256": "5ba02f971dc46d7e9ece5c8eb11d6674fd4f280f3f095261b8860af1cc32bec9",
+      "functions": [
+        {
+          "function": "__init__",
+          "line": 36,
+          "end_line": 143,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/hybrid_replay_buffer.py#L36-L143"
+        },
+        {
+          "function": "add",
+          "line": 145,
+          "end_line": 238,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/hybrid_replay_buffer.py#L145-L238"
+        },
+        {
+          "function": "_to_tensor",
+          "line": 240,
+          "end_line": 250,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/hybrid_replay_buffer.py#L240-L250"
+        },
+        {
+          "function": "_process_complete_episode",
+          "line": 252,
+          "end_line": 376,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/hybrid_replay_buffer.py#L252-L376"
+        },
+        {
+          "function": "sample",
+          "line": 378,
+          "end_line": 403,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/hybrid_replay_buffer.py#L378-L403"
+        },
+        {
+          "function": "_sample_standard",
+          "line": 405,
+          "end_line": 541,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/hybrid_replay_buffer.py#L405-L541"
+        },
+        {
+          "function": "_sample_rlpd",
+          "line": 543,
+          "end_line": 574,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/hybrid_replay_buffer.py#L543-L574"
+        },
+        {
+          "function": "get_batch_from_indices",
+          "line": 576,
+          "end_line": 593,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/hybrid_replay_buffer.py#L576-L593"
+        },
+        {
+          "function": "_sample_expert_data",
+          "line": 595,
+          "end_line": 635,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/hybrid_replay_buffer.py#L595-L635"
+        },
+        {
+          "function": "__len__",
+          "line": 638,
+          "end_line": 640,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/hybrid_replay_buffer.py#L638-L640"
+        },
+        {
+          "function": "get_total_transitions",
+          "line": 642,
+          "end_line": 644,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/hybrid_replay_buffer.py#L642-L644"
+        },
+        {
+          "function": "is_full",
+          "line": 646,
+          "end_line": 648,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/hybrid_replay_buffer.py#L646-L648"
+        },
+        {
+          "function": "clear",
+          "line": 650,
+          "end_line": 655,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/hybrid_replay_buffer.py#L650-L655"
+        }
+      ]
+    },
+    "agent/dataset/sequence.py": {
+      "sha256": "3360ad38e07138f2f454dfd522fb1cb68fb1a9a8a95b9d326ec8848205aa9051",
+      "functions": [
+        {
+          "function": "__init__",
+          "line": 39,
+          "end_line": 118,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/dataset/sequence.py#L39-L118"
+        },
+        {
+          "function": "__getitem__",
+          "line": 120,
+          "end_line": 145,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/dataset/sequence.py#L120-L145"
+        },
+        {
+          "function": "make_indices",
+          "line": 147,
+          "end_line": 160,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/dataset/sequence.py#L147-L160"
+        },
+        {
+          "function": "set_train_val_split",
+          "line": 162,
+          "end_line": 170,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/dataset/sequence.py#L162-L170"
+        },
+        {
+          "function": "__len__",
+          "line": 172,
+          "end_line": 173,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/dataset/sequence.py#L172-L173"
+        },
+        {
+          "function": "__init__",
+          "line": 186,
+          "end_line": 286,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/dataset/sequence.py#L186-L286"
+        },
+        {
+          "function": "make_indices",
+          "line": 288,
+          "end_line": 308,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/dataset/sequence.py#L288-L308"
+        },
+        {
+          "function": "__getitem__",
+          "line": 310,
+          "end_line": 445,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/agent/dataset/sequence.py#L310-L445"
+        }
+      ]
+    },
+    "env/gym_utils/wrapper/multi_step_full.py": {
+      "sha256": "5f00110e81e09cd602700e87490c72d236b6d92b8df1a495ba2470581e7f29cf",
+      "functions": [
+        {
+          "function": "__init__",
+          "line": 31,
+          "end_line": 43,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/env/gym_utils/wrapper/multi_step_full.py#L31-L43"
+        },
+        {
+          "function": "reset",
+          "line": 45,
+          "end_line": 60,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/env/gym_utils/wrapper/multi_step_full.py#L45-L60"
+        },
+        {
+          "function": "step",
+          "line": 62,
+          "end_line": 139,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/env/gym_utils/wrapper/multi_step_full.py#L62-L139"
+        }
+      ]
+    },
+    "util/scheduler.py": {
+      "sha256": "a010f1481ffd2634e9a2c0eda6d6ad016cdcd5fb0daa58a85a63f02ec3c26800",
+      "functions": [
+        {
+          "function": "__init__",
+          "line": 44,
+          "end_line": 72,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/scheduler.py#L44-L72"
+        },
+        {
+          "function": "init_lr",
+          "line": 74,
+          "end_line": 78,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/scheduler.py#L74-L78"
+        },
+        {
+          "function": "get_lr",
+          "line": 80,
+          "end_line": 103,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/scheduler.py#L80-L103"
+        },
+        {
+          "function": "step",
+          "line": 105,
+          "end_line": 147,
+          "url": "https://github.com/real-stanford/dice-rl/blob/98d936e52523878f0172e606ea32403176497100/util/scheduler.py#L105-L147"
+        }
+      ]
+    }
+  }
+}

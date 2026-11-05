@@ -13,6 +13,7 @@ not initialize JAX, download a checkpoint, or allocate a GPU.
 from __future__ import annotations
 
 import copy
+import dataclasses
 import hashlib
 import json
 import shutil
@@ -59,10 +60,13 @@ class Pi05Flow:
     def from_config(cls, config: dict[str, Any]) -> Pi05Flow:
         """Load the local JAX checkpoint, without modifying upstream OpenPI.
 
-        Keys: ``checkpoint``, ``model_config`` (``pi05_libero``), and
-        ``projection_only`` (False).  Projection-only is a low-memory software
-        diagnostic, not the full action-expert finetuning experiment.
+        Supports pi05_libero and pi05_base with an explicit LIBERO adapter and
+        calibration assets. lora_rank > 0 trains only action-expert adapters.
         """
+        if cls is Pi05Flow and config.get("lora_target") == "vlm":
+            from rl_vla.rldt_vlm_lora import VlmLoraFlow
+
+            return VlmLoraFlow.from_config(config)
         try:
             import jax
             import jax.numpy as jnp
@@ -79,12 +83,23 @@ class Pi05Flow:
             ) from exc
 
         model_name = str(config.get("model_config", "pi05_libero"))
-        if model_name != "pi05_libero":
+        if model_name not in {"pi05_libero", "pi05_base"}:
             raise ValueError(
-                "This environment/action adapter supports model_config='pi05_libero'. "
+                "This environment/action adapter supports pi05_libero or pi05_base. "
                 "Other pi0.5 checkpoints need their own robot observation/action adapter."
             )
-        default_checkpoint = Path(__file__).resolve().parents[2] / "checkpoints/openpi/pi05_libero"
+        from rl_vla.rldt_lora import initialize_adapters, lora_settings
+
+        lora_rank, lora_alpha, lora_seed = lora_settings(config)
+        if model_name == "pi05_base" and (
+            config.get("observation_action_adapter") != "libero"
+            or not config.get("normalization_assets")
+        ):
+            raise ValueError(
+                "pi05_base requires observation_action_adapter='libero' and explicit "
+                "normalization_assets containing physical-intelligence/libero/norm_stats.json"
+            )
+        default_checkpoint = Path(__file__).resolve().parents[2] / "checkpoints/openpi" / model_name
         checkpoint = Path(config.get("checkpoint", default_checkpoint)).expanduser().resolve()
         if not (checkpoint / "params").is_dir() or not (checkpoint / "assets").is_dir():
             raise FileNotFoundError(
@@ -98,7 +113,14 @@ class Pi05Flow:
         if not isinstance(projection_only, bool):
             raise TypeError("projection_only must be a boolean")
 
-        train_config = config_module.get_config(model_name)
+        train_config = config_module.get_config("pi05_libero")
+        if model_name == "pi05_base":
+            from openpi.models.pi0_config import Pi0Config
+
+            train_config = dataclasses.replace(
+                train_config,
+                model=Pi0Config(pi05=True, action_horizon=50, discrete_state_input=True),
+            )
         model_config = train_config.model
         if not model_config.pi05:
             raise ValueError("RLDT Pi05Flow requires a pi0.5 model configuration")
@@ -113,11 +135,21 @@ class Pi05Flow:
         params = params.map(lambda _, value: value.replace(value.value.astype(jnp.float32)))
         if not params.flat_state():
             raise ValueError("The checkpoint has no recognized trainable action-expert parameters")
+        lora_paths = ()
+        if lora_rank:
+            # Preserve the established float32 expert / bfloat16 VLM computation.
+            # Freeze every original weight, including action/time projections and norms.
+            frozen = nnx.state(nnx.merge(graphdef, params, frozen))
+            params, lora_paths = initialize_adapters(
+                frozen, lora_rank, lora_seed, config.get("lora_target", "action_expert"))
 
         data_config = train_config.data.create(train_config.assets_dirs, model_config)
         if data_config.asset_id is None:
             raise ValueError("Checkpoint configuration does not identify normalization assets")
-        norm_stats = checkpoints.load_norm_stats(checkpoint / "assets", data_config.asset_id)
+        normalization_assets = Path(
+            config.get("normalization_assets", checkpoint / "assets")
+        ).expanduser().resolve()
+        norm_stats = checkpoints.load_norm_stats(normalization_assets, data_config.asset_id)
         self = cls()
         self.params = params
         self.frozen = frozen
@@ -125,6 +157,11 @@ class Pi05Flow:
         self.checkpoint = checkpoint
         self.model_config_name = model_name
         self.projection_only = projection_only
+        self.lora_rank = lora_rank
+        self.lora_target = config.get("lora_target", "action_expert")
+        self.lora_scale = lora_alpha / lora_rank if lora_rank else 0
+        self.lora_paths = lora_paths
+        self.normalization_assets = normalization_assets
         self.horizon = int(model_config.action_horizon)
         self.action_dim = int(model_config.action_dim)
         self.motor_dim = 7
@@ -150,10 +187,10 @@ class Pi05Flow:
         self._encode_jit = jax.jit(self._encode_prefix)
         asset_records = [
             (
-                str(path.relative_to(checkpoint / "assets")),
+                str(path.relative_to(normalization_assets)),
                 hashlib.sha256(path.read_bytes()).hexdigest(),
             )
-            for path in sorted((checkpoint / "assets").rglob("*"))
+            for path in sorted(normalization_assets.rglob("*"))
             if path.is_file()
         ]
         self.metadata = {
@@ -185,7 +222,31 @@ class Pi05Flow:
                 json.dumps(asset_records).encode()
             ).hexdigest(),
         }
+        if model_name == "pi05_base":
+            self.metadata.update(
+                observation_action_adapter="libero",
+                discrete_state_input=True,
+                normalization_assets=str(normalization_assets),
+                weight_origin="pi05_base; LIBERO calibration only; no pi05_libero weights",
+            )
+        if lora_rank:
+            self.metadata.update(
+                lora_rank=lora_rank, lora_alpha=lora_alpha, lora_seed=lora_seed,
+                lora_targets=f"{self.lora_target}_attention_mlp_last_two_axes",
+                lora_parameterization="frozen_weight_plus_alpha_over_rank_AB_v1",
+                lora_weight_tensors=len(lora_paths),
+            )
         return self
+
+    def _merge_model(self, params, frozen):
+        from flax import nnx
+
+        if getattr(self, "lora_rank", 0):
+            from rl_vla.rldt_lora import materialize_adapters
+
+            state = materialize_adapters(params, frozen, self.lora_paths, self.lora_scale)
+            return nnx.merge(self.graphdef, state)
+        return nnx.merge(self.graphdef, params, frozen)
 
     def _transform_observation(self, raw: dict[str, Any]) -> dict[str, Any]:
         payload = raw.get("openpi", raw)
@@ -222,7 +283,8 @@ class Pi05Flow:
 
         # Keep checkpoint arrays as explicit JIT inputs. Closing over several
         # GB of VLM weights embeds them into HLO and makes compilation costly.
-        model = nnx.merge(self.graphdef, params, frozen)
+        model = (nnx.merge(self.graphdef, frozen) if getattr(self, "lora_rank", 0)
+                 else nnx.merge(self.graphdef, params, frozen))
         observation = model_module.preprocess_observation(None, observation, train=False)
         tokens, mask, autoregressive_mask = model.embed_prefix(observation)
         positions = jnp.cumsum(mask, axis=1) - 1
@@ -265,7 +327,6 @@ class Pi05Flow:
         """
         import jax
         import jax.numpy as jnp
-        from flax import nnx
         from openpi.models.model import Observation
         from openpi.models.pi0 import make_attn_mask
 
@@ -273,7 +334,7 @@ class Pi05Flow:
             raise ValueError(f"Expected x [B,{self.horizon},{self.action_dim}], got {x.shape}")
         if t.shape != (x.shape[0],):
             raise ValueError(f"Expected timestep [B], got {t.shape}")
-        model = nnx.merge(self.graphdef, params, self.frozen if frozen is None else frozen)
+        model = self._merge_model(params, self.frozen if frozen is None else frozen)
         observation = Observation(images={}, image_masks={}, state=context["state"])
         tokens, suffix_mask, autoregressive_mask, condition = model.embed_suffix(observation, x, t)
         prefix_mask = context["prefix_mask"]
@@ -311,6 +372,16 @@ class Pi05Flow:
         if not isinstance(steps, int) or steps < 1:
             raise ValueError("steps must be a positive integer")
         noise = jax.random.normal(key, (context["state"].shape[0], self.horizon, self.action_dim))
+        return self.sample_with_noise(params, context, noise, steps, frozen=frozen)
+
+    def sample_with_noise(self, params, context, noise, steps=10, *, frozen=None):
+        """Same Euler sampler with explicit Gaussian arrays for parity/batching."""
+        import jax
+        import jax.numpy as jnp
+        if noise.shape != (context["state"].shape[0], self.horizon, self.action_dim):
+            raise ValueError("Explicit flow noise shape does not match the context")
+        if not isinstance(steps, int) or steps < 1:
+            raise ValueError("steps must be positive")
 
         def step(x, index):
             t = jnp.full((x.shape[0],), 1.0 - index / steps, dtype=jnp.float32)
@@ -380,10 +451,14 @@ class Pi05Flow:
         source = Path(path).expanduser().resolve()
         if source.is_dir() and (source / "params").is_dir():
             self._validate_checkpoint_manifest(source, "openpi-native-rldt-v1")
-            flat = traverse_util.flatten_dict(
-                restore_params(source / "params", restore_type=np.ndarray)
-            )
-            arrays = {"/".join(map(str, key)): value for key, value in flat.items()}
+            if getattr(self, "lora_rank", 0):
+                with np.load(source / "expert.npz", allow_pickle=False) as archive:
+                    arrays = {key: archive[key].copy() for key in archive.files}
+            else:
+                flat = traverse_util.flatten_dict(
+                    restore_params(source / "params", restore_type=np.ndarray)
+                )
+                arrays = {"/".join(map(str, key)): value for key, value in flat.items()}
         else:
             if source.is_dir():
                 source = source / "expert.npz"
@@ -434,6 +509,11 @@ class Pi05Flow:
                 raise ValueError(
                     f"Expert checkpoint {key} does not match the loaded base checkpoint"
                 )
+        for key in ("lora_rank", "lora_alpha", "lora_seed", "lora_targets",
+                    "lora_parameterization", "observation_action_adapter",
+                    "discrete_state_input"):
+            if saved.get(key) != self.metadata.get(key):
+                raise ValueError(f"Expert checkpoint {key} does not match the configured policy")
 
     def export_native(self, output_dir: str | Path, params) -> Path:
         """Write params/ and assets/ accepted by upstream OpenPI serving.
@@ -446,10 +526,15 @@ class Pi05Flow:
 
         output = Path(output_dir).expanduser().resolve()
         output.mkdir(parents=True, exist_ok=False)
-        model = nnx.merge(self.graphdef, params, self.frozen)
+        model = self._merge_model(params, self.frozen)
         with ocp.PyTreeCheckpointer() as checkpointer:
             checkpointer.save(output / "params", {"params": nnx.state(model).to_pure_dict()})
-        shutil.copytree(self.checkpoint / "assets", output / "assets")
+        shutil.copytree(self.normalization_assets, output / "assets")
+        if getattr(self, "lora_rank", 0):
+            np.savez(output / "expert.npz", **{
+                "/".join(map(str, path)): np.asarray(value.value, dtype=np.float32)
+                for path, value in params.flat_state().items()
+            })
         (output / "rldt_pi05.json").write_text(
             json.dumps({**self.metadata, "format": "openpi-native-rldt-v1"}, indent=2) + "\n"
         )

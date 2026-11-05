@@ -24,7 +24,8 @@ def process_config(benchmark, protocol, split):
            "OPENBLAS_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "NUMBA_NUM_THREADS": "1",
            "PYTHONUNBUFFERED": "1"}
     if benchmark == "robocasa":
-        env.update(MUJOCO_GL="osmesa", PYOPENGL_PLATFORM="osmesa", LP_NUM_THREADS="1", NUMBA_DISABLE_JIT="1")
+        env.update(MUJOCO_GL="osmesa", PYOPENGL_PLATFORM="osmesa",
+                   LP_NUM_THREADS=os.environ.get("ROBOCASA_RENDER_THREADS", "1"), NUMBA_DISABLE_JIT="1")
     else:
         # SAPIEN's Vulkan renderer needs the assigned GPU; JAX in this process stays on CPU.
         env.update(PYOPENGL_PLATFORM="egl")
@@ -46,6 +47,7 @@ def make_env(benchmark, protocol=None, split="train", seed=0, episode_ids=None, 
     if split not in {"train", "validation", "test"}:
         raise ValueError(f"Unknown episode split: {split}")
     seeds, expected = None, None
+    native_kwargs = {}
     if protocol:
         definition = json.loads(Path(protocol).read_text())["tasks"][benchmark]
         seeds = definition[f"{split}_seeds"]
@@ -53,12 +55,15 @@ def make_env(benchmark, protocol=None, split="train", seed=0, episode_ids=None, 
         if not seeds or len(seeds) != len(expected) or len(set(seeds)) != len(seeds):
             raise ValueError("Invalid frozen reset schedule")
         max_episode_steps = definition["max_steps"]
+        native_kwargs = definition.get("native_kwargs", {})
+        if set(native_kwargs) - {"obj_groups", "expected_prompt"}:
+            raise ValueError("Unsupported native task override")
     horizon = int(max_episode_steps or spec["max_steps"])
     module = importlib.import_module(f"multibench.{benchmark}.{spec['module']}")
     if benchmark == "maniskill":
         native = module.make_env(episode_ids=episode_ids, max_episode_steps=horizon)
     elif benchmark == "robocasa":
-        native = module.make_env(split="target", max_steps=horizon, seed=seed)
+        native = module.make_env(split="target", max_steps=horizon, seed=seed, **native_kwargs)
     else:
         native = module.make_env(max_steps=horizon)
 

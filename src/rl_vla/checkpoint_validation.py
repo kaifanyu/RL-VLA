@@ -39,6 +39,9 @@ def run_checkpoint_validation(training, checkpoint, iteration, counters, method)
         command = ["bash", str(root / "scripts/run_rldt.sh"), "evaluate", "--config",
                    str(task / "validation.toml"), "--output", str(destination),
                    "--episodes", "50", "--seed", "100000", "--record-episodes", "50"]
+        if int(os.environ.get("RL_VLA_EVAL_SHARDS", "1")) > 1:
+            command = [str(root / ".venv/bin/python"),
+                       str(root / "scripts/evaluate_vla_trace_sharded.py"), *command[3:]]
     else:
         command = ["bash", str(root / "scripts/run_pi_rl.sh"),
                    "integrations/rlinf_bridge/evaluate.py", "--config", str(training / "config.yaml"),
@@ -50,6 +53,17 @@ def run_checkpoint_validation(training, checkpoint, iteration, counters, method)
     # The learner is paused and retains its optimizer/replay/RNG. The evaluator
     # uses a separate simulator and a bounded JAX pool on the same 96 GB GPU.
     env.update(XLA_PYTHON_CLIENT_MEM_FRACTION="0.20", XLA_PYTHON_CLIENT_PREALLOCATE="false")
+    # Optional dedicated evaluator device for local multi-GPU campaigns. The
+    # paused learner keeps its original device, optimizer, replay, and RNG.
+    # Unset preserves the existing single-GPU Slurm behavior.
+    validation_gpu = env.get("RL_VLA_VALIDATION_GPU")
+    if validation_gpu is not None:
+        if not validation_gpu or "," in validation_gpu:
+            raise ValueError("RL_VLA_VALIDATION_GPU must identify one dedicated GPU")
+        env["CUDA_VISIBLE_DEVICES"] = validation_gpu
+        env["XLA_PYTHON_CLIENT_MEM_FRACTION"] = "0.55"
+        if env.get("RL_VLA_VALIDATION_CPUSET"):
+            env["RLDT_CPUSET"] = env["RL_VLA_VALIDATION_CPUSET"]
     started = time.monotonic()
     progress_path = output / "checkpoint_validation_status.json"
     progress_path.write_text(json.dumps({"state": "running", "iteration": iteration,

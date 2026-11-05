@@ -1,0 +1,104 @@
+profile = "paper_algorithm_pi05_domain_adaptation"
+ablations = []
+algorithm = "dice"
+official_code_commit = "98d936e52523878f0172e606ea32403176497100"
+reference_recipe = "cfg/robomimic/finetune/can/ft_distill_residual_flow_unet_img.yaml"
+paper_version = "2603.10263v2"
+
+[policy]
+checkpoint = "/workspace/upenn/RL-VLA/checkpoints/openpi/pi05_libero"
+model_config = "pi05_libero"
+projection_only = false
+
+[env]
+kind = "external"
+factory = "rl_vla.envs.libero_pro:make_env"
+python = "/workspace/upenn/RL-VLA/.venv-pro/bin/python"
+[env.kwargs]
+protocol = "/workspace/upenn/RL-VLA/runs/vla_trace_objects_20261031/tasks/object_0/protocol.json"
+task_key = "object_0"
+split = "train"
+
+[data]
+mode = "demonstrations"
+path = "datasets/dice/object_0_chunk_n3.mpk"
+expert_fraction = 0.7
+expert_fraction_end = 0.1
+expert_fraction_decay_decisions = 160000
+schedule_units = "commands"
+fixed_split = true
+
+[train]
+seed = 42
+max_steps = 3000000
+# Rational gradient credit is G/E per serial chunk.
+gradient_steps_per_chunk = 10
+reference_parallel_envs = 4
+milestones = []
+episodes = 100000
+batch_size = 256
+replay_capacity = 2000000
+replay_max_mb = 4096
+# Legacy compatibility field; ignored by the per-chunk update path.
+updates_per_episode = 4
+save_every = 5
+
+[dice]
+execute_steps = 5
+ode_steps = 10
+# K_train and K_bootstrap are expectations; collection/evaluation K are separate.
+particles = 16
+k_train = 16
+k_bootstrap = 16
+k_collection = 16
+selection_samples = 16
+selection_strategy = "max_q_min"
+# Warmup units: reference collection groups floor(decisions/E).
+selection_warmup = 3000
+filter_warmup = 2000
+width = 1024
+activation = "GELU"
+layernorm = true
+critic_ensemble_size = 10
+zero_init = true
+filter_enabled = true
+calibration_mode = "candidate"
+retain_expert_regularization = false
+disable_expert_actor_q = false
+q_normalization = false
+discount_mode = "chunk"
+n_step = 3
+reward_scale = 1.0
+actor_update_freq = 2
+target_update_freq = 2
+delay_clock = "collection"
+weight_decay = 0.00001
+lr_scheduler = true
+lr_cycle_steps = 1000
+lr_warmup_steps = 10
+min_lr = 0.000001
+actor_lr = 0.0001
+critic_lr = 0.0001
+gamma = 0.99
+target_tau = 0.01
+bc_weight = 50.0
+underestimation_threshold = -0.5
+max_grad_norm = 1.0
+[data.provenance.task]
+task_key = "object_0"
+task_suite = "libero_object"
+task_id = 0
+instruction = "pick the alphabet soup and place it in the basket"
+[data.provenance.environment]
+adapter = "rl_vla.envs.libero_pro:make_env"
+protocol_id = "sha256:a1e84a70c766c7ad74898b3bec9a12e272b1c326cb94a08cfaf0bc432e1bafa4"
+protocol_sha256 = "a1e84a70c766c7ad74898b3bec9a12e272b1c326cb94a08cfaf0bc432e1bafa4"
+protocol_version = 2
+split = "train"
+[data.provenance.demonstration]
+source_id = "UNVERIFIED-demonstration-pack-requires-export"
+source_split = "train"
+
+[evaluation]
+k = 1
+noise_protocol = "per_episode_jax"

@@ -3,13 +3,12 @@ import argparse
 import hashlib
 import importlib.metadata
 import json
-from pathlib import Path
 import time
+from pathlib import Path
 
 import numpy as np
+from environment import TASK_ID, Plate25Env
 from PIL import Image
-
-from environment import Plate25Env, TASK_ID
 
 
 def main():
@@ -21,11 +20,14 @@ def main():
     args.output.mkdir(parents=True, exist_ok=True)
     start = time.monotonic()
     env = Plate25Env(sim_backend=args.sim_backend, render_backend=args.render_backend)
+    initialization_seconds = time.monotonic() - start
     try:
         records = []
         initial_states = []
         for i, seed in enumerate([20261029, 20261030, 20261029]):
+            reset_start = time.monotonic()
             obs, info = env.reset(seed=seed)
+            reset_seconds = time.monotonic() - reset_start
             assert not info["is_success"], "A smoke reset already satisfies the task"
             assert env.observation_space.contains(obs), "Reset observation violates declared spaces"
             initial_states.append(obs["state"].copy())
@@ -34,9 +36,12 @@ def main():
             record = {"seed": seed, "episode_id": info["episode_id"], "prompt": obs["openpi"]["prompt"],
                       "state": obs["state"].tolist(), "image_shape": list(obs["openpi"]["observation/image"].shape),
                       "image_sha256": hashlib.sha256(obs["openpi"]["observation/image"].tobytes()).hexdigest(),
-                      "reset_success": info["is_success"]}
+                      "reset_success": info["is_success"], "reset_seconds": reset_seconds,
+                      "step_seconds": []}
             for _ in range(3):
+                step_start = time.monotonic()
                 obs, reward, terminated, truncated, info = env.step(np.array([0., 0., 0., 0., 0., 0., 1.]))
+                record["step_seconds"].append(time.monotonic() - step_start)
                 assert isinstance(info["is_success"], bool)
                 assert np.isfinite(reward) and np.isfinite(obs["state"]).all()
                 assert not terminated and not truncated
@@ -72,6 +77,7 @@ def main():
                   "action_low": env.action_space.low.tolist(), "action_high": env.action_space.high.tolist(),
                   "total_num_trials": env.native.unwrapped.total_num_trials,
                   "elapsed_seconds": time.monotonic() - start,
+                  "initialization_seconds": initialization_seconds,
                   "versions": {name: importlib.metadata.version(name)
                                for name in ["mani_skill", "sapien", "torch", "gymnasium", "numpy"]}}
         (args.output / "smoke.json").write_text(json.dumps(result, indent=2) + "\n")

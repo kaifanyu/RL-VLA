@@ -9,11 +9,20 @@ from pathlib import Path
 
 import numpy as np
 
-from rl_vla.dice_core import discounted_returns
 
-
-def convert_episode(episode, prior, gamma, provenance):
+def convert_episode(
+    episode,
+    prior,
+    gamma,
+    provenance,
+    *,
+    discount_mode="primitive",
+    n_step=1,
+    reward_scale=1.0,
+    require_sparse_success=False,
+):
     from rl_vla.dice import validate_replay_provenance
+    from rl_vla.dice_replay import action_mask, chunk_discount, chunk_reward, finish_episode
 
     validate_replay_provenance(episode.get("provenance"), provenance)
     observations = episode["observations"]
@@ -27,6 +36,16 @@ def convert_episode(episode, prior, gamma, provenance):
         raise ValueError("Non-finite demonstration data")
     if episode.get("ending") not in ("terminated", "truncated"):
         raise ValueError("Need a verified finite-episode boundary")
+    if require_sparse_success:
+        if not np.isin(rewards, [0.0, 1.0]).all():
+            raise ValueError("LIBERO profile requires verified binary success rewards")
+        successes = np.flatnonzero(rewards)
+        if len(successes) > 1 or (len(successes) and successes[0] != len(rewards) - 1):
+            raise ValueError(
+                "Export demonstrations ending at first success with its final observation"
+            )
+        if (episode["ending"] == "terminated") != bool(len(successes)):
+            raise ValueError("Demonstration ending disagrees with verified success reward")
     if any(
         not isinstance(raw, dict)
         or not isinstance(raw.get("openpi"), dict)
@@ -49,22 +68,23 @@ def convert_episode(episode, prior, gamma, provenance):
         normalized = np.asarray(transformed["actions"], np.float32)
         if normalized.shape != (h, prior.flow.action_dim) or not np.isfinite(normalized).all():
             raise ValueError("Checkpoint normalization returned unexpected actions")
-        reward = float(sum(gamma**i * rewards[start + i] for i in range(end - start)))
+        reward = chunk_reward(rewards[start:end], gamma, discount_mode, reward_scale)
         records.append(
             {
                 "observation": raw,
                 "next_observation": observations[end],
                 "actions": normalized[:e, :7].reshape(-1).copy(),
                 "rewards": reward,
-                "discounts": 0.0 if end == len(actions) else gamma ** (end - start),
+                "discounts": chunk_discount(gamma, end - start, end == len(actions), discount_mode),
+                "action_mask": action_mask(e * 7, end - start, e),
+                "executed_steps": end - start,
+                "terminated": end == len(actions) and episode["ending"] == "terminated",
+                "truncated": end == len(actions) and episode["ending"] == "truncated",
                 "expert": 1.0,
                 "provenance": provenance,
             }
         )
-    returns = discounted_returns([r["rewards"] for r in records], [r["discounts"] for r in records])
-    for r, value in zip(records, returns, strict=True):
-        r["returns"] = value
-    return records
+    return finish_episode(records, n_step)
 
 
 def main():
@@ -109,11 +129,28 @@ def main():
     prior = FrozenPi05(c["policy"], c["dice"])
     records = []
     for episode in payload["episodes"]:
-        records.extend(convert_episode(episode, prior, c["dice"]["gamma"], provenance))
+        records.extend(
+            convert_episode(
+                episode,
+                prior,
+                c["dice"]["gamma"],
+                provenance,
+                discount_mode=c["dice"].get("discount_mode", "primitive"),
+                n_step=c["dice"].get("n_step", 1),
+                reward_scale=c["dice"].get("reward_scale", 1.0),
+                require_sparse_success="profile" in c,
+            )
+        )
     packed = msgpack_numpy.packb(
         {
             "format": "dice-pi05-transitions-v1",
-            "metadata": {**prior.metadata, "gamma": c["dice"]["gamma"]},
+            "metadata": {
+                **prior.metadata,
+                "gamma": c["dice"]["gamma"],
+                "discount_mode": c["dice"].get("discount_mode", "primitive"),
+                "n_step": c["dice"].get("n_step", 1),
+                "reward_scale": c["dice"].get("reward_scale", 1.0),
+            },
             "provenance": provenance,
             "transitions": records,
         }

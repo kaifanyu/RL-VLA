@@ -1,0 +1,1836 @@
+{
+  "commit": "98d936e52523878f0172e606ea32403176497100",
+  "configs": {
+    "cfg/robomimic/finetune/can/ft_distill_residual_flow_mlp.yaml": {
+      "sha256": "2f49d37bf4e24656008fbd246b3d5baee04f49bbf13825055b77142c07a95a9c",
+      "config": {
+        "defaults": [
+          "_self_"
+        ],
+        "hydra": {
+          "run": {
+            "dir": "${logdir}"
+          },
+          "job": {
+            "chdir": false
+          }
+        },
+        "_target_": "agent.finetune.train_distill_residual_flow_agent.TrainDistillResidualFlowAgent",
+        "name": "${env_name}_ft_distill_residual_flow_mlp_ta${horizon_steps}_fl${flow_steps}",
+        "logdir": "log_dir/robomimic-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}",
+        "base_policy_path": "log_dir/robomimic-pretrain/pretrained_bc_policy_${env_name}_low_dim/checkpoint/state_3000.pt",
+        "robomimic_env_cfg_path": "cfg/robomimic/env_meta/${env_name}.json",
+        "normalization_path": "data_dir/robomimic/${env_name}-low-dim/ph_pretrain/normalization.npz",
+        "seed": 42,
+        "device": "cuda:0",
+        "env_name": "can",
+        "run_eval": true,
+        "obs_dim": 23,
+        "action_dim": 7,
+        "flow_steps": 10,
+        "cond_steps": 1,
+        "horizon_steps": 4,
+        "act_steps": 4,
+        "noise_dim": 28,
+        "env": {
+          "n_envs": 4,
+          "name": "${env_name}",
+          "best_reward_threshold_for_success": 1,
+          "max_episode_steps": 400,
+          "save_video": false,
+          "wrappers": {
+            "robomimic_lowdim": {
+              "normalization_path": "${normalization_path}",
+              "success_steps_before_termination": 1,
+              "low_dim_keys": [
+                "robot0_eef_pos",
+                "robot0_eef_quat",
+                "robot0_gripper_qpos",
+                "object"
+              ]
+            },
+            "multi_step": {
+              "n_obs_steps": "${cond_steps}",
+              "n_action_steps": "${act_steps}",
+              "max_episode_steps": "${env.max_episode_steps}",
+              "reset_within_step": true,
+              "gamma": "${train.gamma}"
+            }
+          }
+        },
+        "wandb": {
+          "entity": null,
+          "project": "robomimic-${env_name}-distill-residual-flow-state",
+          "run": "${now:%Y-%m-%d_%H-%M-%S_%f}_${name}"
+        },
+        "train": {
+          "num_train_steps": 2000000,
+          "val_freq": 10,
+          "n_steps": 200,
+          "n_train_itr": 1000,
+          "batch_size": 256,
+          "eval_freq": 1000,
+          "gamma": 0.99,
+          "tau": 0.01,
+          "update_freq": 1,
+          "gradient_steps": 10,
+          "actor_lr": "1e-4",
+          "critic_lr": "1e-4",
+          "actor_weight_decay": "1e-5",
+          "critic_weight_decay": "1e-5",
+          "use_lr_scheduler": true,
+          "lr_scheduler": {
+            "first_cycle_steps": 1000,
+            "warmup_steps": 10,
+            "min_lr": "1e-6"
+          },
+          "actor_update_freq": 2,
+          "critic_target_update_freq": 2,
+          "save_model_freq": 100,
+          "render": {
+            "freq": 1,
+            "num": 0
+          },
+          "log_freq": 1,
+          "max_grad_norm": 1.0
+        },
+        "replay_buffer": {
+          "max_size": 5000000,
+          "use_n_step": true,
+          "n_step": 3,
+          "expert_use_n_step": "${expert_dataset.use_n_step}",
+          "expert_n_step": "${expert_dataset.n_step}"
+        },
+        "use_rlpd": true,
+        "expert_ratio": 0.3,
+        "use_adaptive_expert_ratio": true,
+        "adaptive_expert_ratio_start": 0.5,
+        "adaptive_expert_ratio_end": 0.1,
+        "adaptive_expert_ratio_steps": 10000,
+        "model": {
+          "_target_": "model.rl.distill_residual_rl.DistillResidualRLModel",
+          "obs_dim": "${obs_dim}",
+          "action_dim": "${action_dim}",
+          "noise_dim": "${noise_dim}",
+          "cond_steps": "${cond_steps}",
+          "horizon_steps": "${horizon_steps}",
+          "device": "${device}",
+          "condition_residual_on_base_action": false,
+          "num_multi_z_for_actor_loss": 16,
+          "use_n_step": "${replay_buffer.use_n_step}",
+          "n_step": "${replay_buffer.n_step}",
+          "pretrained_flow_policy_path": "${base_policy_path}",
+          "actor_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "critic_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "activation_type": "GELU",
+          "use_layernorm": true,
+          "bc_loss_weight": 100.0,
+          "critic_weight": 1.0,
+          "use_soft_q_filtering": false,
+          "q_filtering_warmup_steps": 2000,
+          "q_underestimation_threshold": -0.5,
+          "replay_flow_warmup_steps": 4000,
+          "use_q_normalization": true,
+          "disable_q_loss_for_expert_data": true,
+          "always_retain_bc_loss_for_expert_data": false,
+          "multi_sample_next_noise": true,
+          "num_next_noise_samples": 4,
+          "critic_ensemble_size": 10
+        },
+        "expert_dataset": {
+          "_target_": "agent.dataset.sequence.StitchedSequenceQLearningDataset",
+          "dataset_path": "data_dir/robomimic/${env_name}-low-dim/ph_finetune/train.npz",
+          "horizon_steps": "${horizon_steps}",
+          "cond_steps": "${cond_steps}",
+          "device": "${device}",
+          "discount_factor": "${train.gamma}",
+          "gamma": "${train.gamma}",
+          "max_n_episodes": 20,
+          "use_img": false,
+          "success_steps_for_termination": "${env.wrappers.robomimic_lowdim.success_steps_before_termination}",
+          "use_n_step": true,
+          "n_step": 3
+        },
+        "visualize_trajectories": false,
+        "visualization_freq": 200000000,
+        "num_eval_episodes": 10,
+        "eval_n_envs": 30,
+        "log_q_overestimation": true,
+        "online_explore_strategy": "max_q_min",
+        "evaluate_strategy": "max_q_min",
+        "num_exploration_samples": 16
+      }
+    },
+    "cfg/robomimic/finetune/can/ft_distill_residual_flow_unet_img.yaml": {
+      "sha256": "45783a0b39bf03300bdc0d09975847096522a8d4dbcd65f0bb6b26213c84f38d",
+      "config": {
+        "defaults": [
+          "_self_"
+        ],
+        "hydra": {
+          "run": {
+            "dir": "${logdir}"
+          },
+          "job": {
+            "chdir": false
+          }
+        },
+        "_target_": "agent.finetune.train_distill_residual_flow_img_agent.TrainDistillResidualFlowImgAgent",
+        "name": "${env_name}_ft_distill_residual_flow_unet_img_ta${horizon_steps}_fl${flow_steps}",
+        "logdir": "log_dir/robomimic-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}",
+        "base_policy_path": "log_dir/robomimic-pretrain/pretrained_bc_policy_can_img/checkpoint/state_2400.pt",
+        "robomimic_env_cfg_path": "cfg/robomimic/env_meta/${env_name}-img.json",
+        "normalization_path": "data_dir/robomimic/${env_name}-img/ph_pretrain/normalization.npz",
+        "seed": 42,
+        "device": "cuda:0",
+        "env_name": "can",
+        "run_eval": true,
+        "obs_dim": 9,
+        "action_dim": 7,
+        "use_6d_rot": false,
+        "abs_action": false,
+        "flow_steps": 10,
+        "cond_steps": 1,
+        "img_cond_steps": 1,
+        "horizon_steps": 4,
+        "act_steps": 4,
+        "noise_dim": 28,
+        "env": {
+          "n_envs": 4,
+          "name": "${env_name}",
+          "best_reward_threshold_for_success": 1,
+          "max_episode_steps": 400,
+          "save_video": false,
+          "use_image_obs": true,
+          "specific": {
+            "abs_action": "${abs_action}",
+            "use_6d_rot": "${use_6d_rot}"
+          },
+          "wrappers": {
+            "robomimic_image": {
+              "normalization_path": "${normalization_path}",
+              "success_steps_before_termination": 1,
+              "image_keys": [
+                "agentview_image",
+                "robot0_eye_in_hand_image"
+              ],
+              "low_dim_keys": [
+                "robot0_eef_pos",
+                "robot0_eef_quat",
+                "robot0_gripper_qpos"
+              ],
+              "shape_meta": "${shape_meta}",
+              "use_6d_rot": "${use_6d_rot}"
+            },
+            "multi_step": {
+              "n_obs_steps": "${cond_steps}",
+              "n_action_steps": "${act_steps}",
+              "max_episode_steps": "${env.max_episode_steps}",
+              "reset_within_step": true,
+              "gamma": "${train.gamma}"
+            }
+          }
+        },
+        "shape_meta": {
+          "obs": {
+            "rgb": {
+              "shape": [
+                96,
+                96,
+                6
+              ]
+            },
+            "state": {
+              "shape": [
+                9
+              ]
+            }
+          },
+          "action": {
+            "shape": [
+              7
+            ]
+          }
+        },
+        "wandb": {
+          "entity": null,
+          "project": "robomimic-${env_name}-distill-residual-flow-img-final",
+          "run": "${now:%Y-%m-%d_%H-%M-%S_%f}_${name}"
+        },
+        "train": {
+          "num_train_steps": 150000,
+          "val_freq": 10,
+          "n_steps": 100,
+          "n_train_itr": 1000,
+          "batch_size": 256,
+          "eval_freq": 1000,
+          "gamma": 0.99,
+          "tau": 0.01,
+          "update_freq": 1,
+          "gradient_steps": 10,
+          "actor_lr": "1e-4",
+          "critic_lr": "1e-4",
+          "actor_weight_decay": "1e-5",
+          "critic_weight_decay": "1e-5",
+          "use_lr_scheduler": true,
+          "lr_scheduler": {
+            "first_cycle_steps": 1000,
+            "warmup_steps": 10,
+            "min_lr": "1e-6"
+          },
+          "actor_update_freq": 2,
+          "critic_target_update_freq": 2,
+          "save_model_freq": 100,
+          "render": {
+            "freq": 0,
+            "num": 0
+          },
+          "log_freq": 1,
+          "max_grad_norm": 1.0
+        },
+        "replay_buffer": {
+          "max_size": 2000000,
+          "use_n_step": true,
+          "n_step": 3,
+          "expert_use_n_step": "${expert_dataset.use_n_step}",
+          "expert_n_step": "${expert_dataset.n_step}"
+        },
+        "use_rlpd": true,
+        "expert_ratio": 0.3,
+        "use_adaptive_expert_ratio": true,
+        "adaptive_expert_ratio_start": 0.7,
+        "adaptive_expert_ratio_end": 0.1,
+        "adaptive_expert_ratio_steps": 10000,
+        "model": {
+          "_target_": "model.rl.distill_residual_rl_img.DistillResidualRLImgModel",
+          "obs_dim": "${obs_dim}",
+          "action_dim": "${action_dim}",
+          "noise_dim": "${noise_dim}",
+          "cond_steps": "${cond_steps}",
+          "horizon_steps": "${horizon_steps}",
+          "device": "${device}",
+          "condition_residual_on_base_action": false,
+          "num_multi_z_for_actor_loss": 16,
+          "use_n_step": "${replay_buffer.use_n_step}",
+          "n_step": "${replay_buffer.n_step}",
+          "pretrained_flow_policy_path": "${base_policy_path}",
+          "actor_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "critic_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "activation_type": "GELU",
+          "use_layernorm": true,
+          "bc_loss_weight": 50.0,
+          "critic_weight": 1.0,
+          "use_soft_q_filtering": false,
+          "q_filtering_warmup_steps": 2000,
+          "q_underestimation_threshold": -0.5,
+          "replay_flow_warmup_steps": 3000,
+          "use_q_normalization": true,
+          "disable_q_loss_for_expert_data": true,
+          "always_retain_bc_loss_for_expert_data": true,
+          "multi_sample_next_noise": true,
+          "num_next_noise_samples": 4,
+          "critic_ensemble_size": 10
+        },
+        "expert_dataset": {
+          "_target_": "agent.dataset.sequence.StitchedSequenceQLearningDataset",
+          "dataset_path": "data_dir/robomimic/${env_name}-img/ph_finetune/train.npz",
+          "horizon_steps": "${horizon_steps}",
+          "cond_steps": "${cond_steps}",
+          "img_cond_steps": "${img_cond_steps}",
+          "device": "${device}",
+          "discount_factor": "${train.gamma}",
+          "gamma": "${train.gamma}",
+          "max_n_episodes": 20,
+          "use_img": true,
+          "success_steps_for_termination": "${env.wrappers.robomimic_image.success_steps_before_termination}",
+          "use_n_step": true,
+          "n_step": 3,
+          "use_6d_rot": "${use_6d_rot}",
+          "abs_action": "${abs_action}"
+        },
+        "visualize_trajectories": false,
+        "visualization_freq": 200000000,
+        "num_eval_episodes": 30,
+        "eval_n_envs": 10,
+        "log_q_overestimation": true,
+        "online_explore_strategy": "max_q_min",
+        "evaluate_strategy": "max_q_min",
+        "num_exploration_samples": 16
+      }
+    },
+    "cfg/robomimic/finetune/pusht/ft_distill_residual_flow_mlp.yaml": {
+      "sha256": "2ea61e453e8f87bbc8df3d9d2ac9f8ff7eb9464072905cf0cb30c0250a2371fc",
+      "config": {
+        "defaults": [
+          "_self_"
+        ],
+        "hydra": {
+          "run": {
+            "dir": "${logdir}"
+          }
+        },
+        "_target_": "agent.finetune.train_distill_residual_flow_agent.TrainDistillResidualFlowAgent",
+        "name": "${env_name}_ft_distill_residual_flow_mlp_ta${horizon_steps}_fl${flow_steps}",
+        "logdir": "${oc.env:DICE_RL_LOG_DIR}/pusht-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}",
+        "base_policy_path": "/store/real/zhanyis/dice-rl/log_dir/pusht-pretrain/pusht_pre_flow_matching_mlp_ta4_td10/2026-01-01_02-33-39_42/checkpoint/state_4000.pt",
+        "normalization_path": "/store/real/zhanyis/dice-rl/data_dir/pusht/processed/normalization.npz",
+        "seed": 42,
+        "device": "cuda:0",
+        "env_name": "pusht",
+        "obs_dim": 5,
+        "action_dim": 2,
+        "flow_steps": 10,
+        "cond_steps": 1,
+        "horizon_steps": 4,
+        "act_steps": 4,
+        "noise_dim": 8,
+        "env": {
+          "n_envs": 4,
+          "name": "${env_name}",
+          "env_type": "pusht",
+          "best_reward_threshold_for_success": 1,
+          "max_episode_steps": 300,
+          "save_video": false,
+          "success_threshold": 0.7695,
+          "wrappers": {
+            "pusht_state": {
+              "normalization_path": "${normalization_path}",
+              "success_threshold": "${env.success_threshold}"
+            },
+            "multi_step": {
+              "n_obs_steps": "${cond_steps}",
+              "n_action_steps": "${act_steps}",
+              "max_episode_steps": "${env.max_episode_steps}",
+              "reset_within_step": true,
+              "gamma": "${train.gamma}"
+            }
+          }
+        },
+        "wandb": {
+          "entity": "${oc.env:DICE_RL_WANDB_ENTITY}",
+          "project": "pusht-distill-residual-flow-state",
+          "run": "${now:%Y-%m-%d_%H-%M-%S_%f}_${name}"
+        },
+        "train": {
+          "num_train_steps": 150000,
+          "val_freq": 10,
+          "n_steps": 200,
+          "n_train_itr": 1000,
+          "batch_size": 256,
+          "eval_freq": 1000,
+          "gamma": 0.99,
+          "tau": 0.01,
+          "update_freq": 1,
+          "gradient_steps": 10,
+          "actor_lr": "1e-4",
+          "critic_lr": "1e-4",
+          "actor_weight_decay": "1e-5",
+          "critic_weight_decay": "1e-5",
+          "use_lr_scheduler": true,
+          "lr_scheduler": {
+            "first_cycle_steps": 1000,
+            "warmup_steps": 10,
+            "min_lr": "1e-6"
+          },
+          "actor_update_freq": 2,
+          "critic_target_update_freq": 2,
+          "save_model_freq": 100,
+          "render": {
+            "freq": 1,
+            "num": 0
+          },
+          "log_freq": 1,
+          "max_grad_norm": 1.0
+        },
+        "replay_buffer": {
+          "max_size": 5000000,
+          "use_n_step": true,
+          "n_step": 3,
+          "expert_use_n_step": "${expert_dataset.use_n_step}",
+          "expert_n_step": "${expert_dataset.n_step}"
+        },
+        "use_rlpd": true,
+        "expert_ratio": 0.3,
+        "use_adaptive_expert_ratio": true,
+        "adaptive_expert_ratio_start": 0.9,
+        "adaptive_expert_ratio_end": 0.1,
+        "adaptive_expert_ratio_steps": 10000,
+        "model": {
+          "_target_": "model.rl.distill_residual_rl.DistillResidualRLModel",
+          "obs_dim": "${obs_dim}",
+          "action_dim": "${action_dim}",
+          "noise_dim": "${noise_dim}",
+          "cond_steps": "${cond_steps}",
+          "horizon_steps": "${horizon_steps}",
+          "device": "${device}",
+          "condition_residual_on_base_action": false,
+          "num_multi_z_for_actor_loss": 4,
+          "use_n_step": "${replay_buffer.use_n_step}",
+          "n_step": "${replay_buffer.n_step}",
+          "pretrained_flow_policy_path": "${base_policy_path}",
+          "actor_hidden_dims": [
+            256,
+            256,
+            256
+          ],
+          "critic_hidden_dims": [
+            256,
+            256,
+            256
+          ],
+          "activation_type": "GELU",
+          "use_layernorm": true,
+          "bc_loss_weight": 50.0,
+          "critic_weight": 1.0,
+          "use_soft_q_filtering": false,
+          "q_filtering_warmup_steps": 6000,
+          "q_underestimation_threshold": -0.65,
+          "use_q_normalization": true,
+          "disable_q_loss_for_expert_data": true,
+          "always_retain_bc_loss_for_expert_data": true,
+          "multi_sample_next_noise": true,
+          "num_next_noise_samples": 4,
+          "critic_ensemble_size": 10
+        },
+        "expert_dataset": {
+          "_target_": "agent.dataset.sequence.StitchedSequenceQLearningDataset",
+          "dataset_path": "/store/real/zhanyis/dice-rl/data_dir/pusht/processed_truncated_1/train.npz",
+          "horizon_steps": "${horizon_steps}",
+          "cond_steps": "${cond_steps}",
+          "device": "${device}",
+          "discount_factor": "${train.gamma}",
+          "gamma": "${train.gamma}",
+          "max_n_episodes": 50,
+          "use_img": false,
+          "success_steps_for_termination": 1,
+          "use_n_step": true,
+          "n_step": 3
+        },
+        "visualize_trajectories": false,
+        "visualization_freq": 200000000,
+        "num_eval_episodes": 30,
+        "eval_n_envs": 10,
+        "log_q_overestimation": true,
+        "online_explore_strategy": "max_q_min",
+        "evaluate_strategy": "max_q_min",
+        "num_exploration_samples": 16
+      }
+    },
+    "cfg/robomimic/finetune/pusht/ft_distill_residual_flow_mlp_img.yaml": {
+      "sha256": "47a79dc964e342effc0e1d7984cf6e7cb70a071debaf5ade1025c71dc6d82d45",
+      "config": {
+        "defaults": [
+          "_self_"
+        ],
+        "hydra": {
+          "run": {
+            "dir": "${logdir}"
+          },
+          "job": {
+            "chdir": false
+          }
+        },
+        "_target_": "agent.finetune.train_distill_residual_flow_img_agent.TrainDistillResidualFlowImgAgent",
+        "name": "${env_name}_ft_distill_residual_flow_unet_img_ta${horizon_steps}_fl${flow_steps}",
+        "logdir": "${oc.env:DICE_RL_LOG_DIR}/pusht-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}",
+        "base_policy_path": "/store/real/zhanyis/dice-rl/log_dir/pusht-pretrain/pusht_pre_flow_matching_mlp_img_ta4_td10/2026-01-04_00-58-22_42/checkpoint/state_5200.pt",
+        "normalization_path": "/store/real/zhanyis/dice-rl/data_dir/pusht/processed/normalization.npz",
+        "seed": 42,
+        "device": "cuda:0",
+        "env_name": "pusht",
+        "obs_dim": 2,
+        "action_dim": 2,
+        "flow_steps": 10,
+        "cond_steps": 1,
+        "img_cond_steps": 1,
+        "horizon_steps": 4,
+        "act_steps": 4,
+        "noise_dim": 8,
+        "env": {
+          "n_envs": 4,
+          "name": "${env_name}",
+          "env_type": "pusht",
+          "best_reward_threshold_for_success": 1,
+          "max_episode_steps": 300,
+          "save_video": true,
+          "success_threshold": 0.7695,
+          "use_image_obs": true,
+          "wrappers": {
+            "pusht_image": {
+              "normalization_path": "${normalization_path}",
+              "success_threshold": "${env.success_threshold}",
+              "render_hw": [
+                96,
+                96
+              ],
+              "clamp_obs": false
+            },
+            "multi_step": {
+              "n_obs_steps": "${cond_steps}",
+              "n_action_steps": "${act_steps}",
+              "max_episode_steps": "${env.max_episode_steps}",
+              "reset_within_step": true,
+              "gamma": "${train.gamma}"
+            }
+          }
+        },
+        "shape_meta": {
+          "obs": {
+            "rgb": {
+              "shape": [
+                96,
+                96,
+                3
+              ]
+            },
+            "state": {
+              "shape": [
+                2
+              ]
+            }
+          },
+          "action": {
+            "shape": [
+              2
+            ]
+          }
+        },
+        "wandb": {
+          "entity": "${oc.env:DICE_RL_WANDB_ENTITY}",
+          "project": "pusht-distill-residual-flow-img",
+          "run": "${now:%Y-%m-%d_%H-%M-%S_%f}_${name}"
+        },
+        "train": {
+          "num_train_steps": 150000,
+          "val_freq": 10,
+          "n_steps": 200,
+          "n_train_itr": 1000,
+          "batch_size": 256,
+          "eval_freq": 1000,
+          "gamma": 0.99,
+          "tau": 0.01,
+          "update_freq": 1,
+          "gradient_steps": 10,
+          "actor_lr": "1e-4",
+          "critic_lr": "1e-4",
+          "actor_weight_decay": "1e-5",
+          "critic_weight_decay": "1e-5",
+          "use_lr_scheduler": true,
+          "lr_scheduler": {
+            "first_cycle_steps": 1000,
+            "warmup_steps": 10,
+            "min_lr": "1e-6"
+          },
+          "actor_update_freq": 2,
+          "critic_target_update_freq": 2,
+          "save_model_freq": 100,
+          "render": {
+            "freq": 4,
+            "num": 4
+          },
+          "log_freq": 1,
+          "max_grad_norm": 1.0
+        },
+        "replay_buffer": {
+          "max_size": 5000000,
+          "use_n_step": true,
+          "n_step": 3,
+          "expert_use_n_step": "${expert_dataset.use_n_step}",
+          "expert_n_step": "${expert_dataset.n_step}"
+        },
+        "use_rlpd": true,
+        "expert_ratio": 0.3,
+        "use_adaptive_expert_ratio": true,
+        "adaptive_expert_ratio_start": 0.5,
+        "adaptive_expert_ratio_end": 0.1,
+        "adaptive_expert_ratio_steps": 10000,
+        "model": {
+          "_target_": "model.rl.distill_residual_rl_img.DistillResidualRLImgModel",
+          "obs_dim": "${obs_dim}",
+          "action_dim": "${action_dim}",
+          "noise_dim": "${noise_dim}",
+          "cond_steps": "${cond_steps}",
+          "horizon_steps": "${horizon_steps}",
+          "device": "${device}",
+          "condition_residual_on_base_action": false,
+          "num_multi_z_for_actor_loss": 4,
+          "use_n_step": "${replay_buffer.use_n_step}",
+          "n_step": "${replay_buffer.n_step}",
+          "pretrained_flow_policy_path": "${base_policy_path}",
+          "actor_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "critic_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "activation_type": "GELU",
+          "use_layernorm": true,
+          "bc_loss_weight": 25.0,
+          "critic_weight": 1.0,
+          "use_soft_q_filtering": false,
+          "q_filtering_warmup_steps": 4000,
+          "q_underestimation_threshold": -0.4,
+          "use_q_normalization": true,
+          "disable_q_loss_for_expert_data": true,
+          "always_retain_bc_loss_for_expert_data": true,
+          "multi_sample_next_noise": true,
+          "num_next_noise_samples": 4,
+          "critic_ensemble_size": 10
+        },
+        "expert_dataset": {
+          "_target_": "agent.dataset.sequence.StitchedSequenceQLearningDataset",
+          "dataset_path": "/store/real/zhanyis/dice-rl/data_dir/pusht/processed_truncated_1/train.npz",
+          "horizon_steps": "${horizon_steps}",
+          "cond_steps": "${cond_steps}",
+          "img_cond_steps": "${img_cond_steps}",
+          "device": "${device}",
+          "discount_factor": "${train.gamma}",
+          "gamma": "${train.gamma}",
+          "max_n_episodes": 50,
+          "use_img": true,
+          "success_steps_for_termination": 1,
+          "use_n_step": true,
+          "n_step": 3,
+          "state_dim_override": 2
+        },
+        "visualize_trajectories": false,
+        "visualization_freq": 200000000,
+        "num_eval_episodes": 10,
+        "eval_n_envs": 30,
+        "log_q_overestimation": true,
+        "online_explore_strategy": "max_q_min",
+        "evaluate_strategy": "max_q_min",
+        "num_exploration_samples": 16
+      }
+    },
+    "cfg/robomimic/finetune/square/ft_distill_residual_flow_mlp.yaml": {
+      "sha256": "be6a295433528d044f32f99a00c8d519b799e703329b6e1503ab1e47eb83e2c7",
+      "config": {
+        "defaults": [
+          "_self_"
+        ],
+        "hydra": {
+          "run": {
+            "dir": "${logdir}"
+          },
+          "job": {
+            "chdir": false
+          }
+        },
+        "_target_": "agent.finetune.train_distill_residual_flow_agent.TrainDistillResidualFlowAgent",
+        "name": "${env_name}_ft_distill_residual_flow_mlp_ta${horizon_steps}_fl${flow_steps}",
+        "logdir": "log_dir/robomimic-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}",
+        "base_policy_path": "log_dir/robomimic-pretrain/pretrained_bc_policy_${env_name}_low_dim/checkpoint/state_3000.pt",
+        "robomimic_env_cfg_path": "cfg/robomimic/env_meta/${env_name}.json",
+        "normalization_path": "data_dir/robomimic/${env_name}-low-dim/ph_pretrain/normalization.npz",
+        "seed": 42,
+        "device": "cuda:0",
+        "env_name": "square",
+        "run_eval": true,
+        "obs_dim": 23,
+        "action_dim": 7,
+        "flow_steps": 10,
+        "cond_steps": 1,
+        "horizon_steps": 4,
+        "act_steps": 4,
+        "noise_dim": 28,
+        "env": {
+          "n_envs": 4,
+          "name": "${env_name}",
+          "best_reward_threshold_for_success": 1,
+          "max_episode_steps": 400,
+          "save_video": false,
+          "wrappers": {
+            "robomimic_lowdim": {
+              "normalization_path": "${normalization_path}",
+              "success_steps_before_termination": 1,
+              "low_dim_keys": [
+                "robot0_eef_pos",
+                "robot0_eef_quat",
+                "robot0_gripper_qpos",
+                "object"
+              ]
+            },
+            "multi_step": {
+              "n_obs_steps": "${cond_steps}",
+              "n_action_steps": "${act_steps}",
+              "max_episode_steps": "${env.max_episode_steps}",
+              "reset_within_step": true,
+              "gamma": "${train.gamma}"
+            }
+          }
+        },
+        "wandb": {
+          "entity": null,
+          "project": "robomimic-${env_name}-distill-residual-flow-state",
+          "run": "${now:%Y-%m-%d_%H-%M-%S_%f}_${name}"
+        },
+        "train": {
+          "num_train_steps": 2000000,
+          "val_freq": 10,
+          "n_steps": 200,
+          "n_train_itr": 1000,
+          "batch_size": 256,
+          "eval_freq": 1000,
+          "gamma": 0.99,
+          "tau": 0.01,
+          "update_freq": 1,
+          "gradient_steps": 10,
+          "actor_lr": "1e-4",
+          "critic_lr": "1e-4",
+          "actor_weight_decay": "1e-5",
+          "critic_weight_decay": "1e-5",
+          "use_lr_scheduler": true,
+          "lr_scheduler": {
+            "first_cycle_steps": 1000,
+            "warmup_steps": 10,
+            "min_lr": "1e-6"
+          },
+          "actor_update_freq": 2,
+          "critic_target_update_freq": 2,
+          "save_model_freq": 100,
+          "render": {
+            "freq": 1,
+            "num": 0
+          },
+          "log_freq": 1,
+          "max_grad_norm": 1.0
+        },
+        "replay_buffer": {
+          "max_size": 5000000,
+          "use_n_step": true,
+          "n_step": 3,
+          "expert_use_n_step": "${expert_dataset.use_n_step}",
+          "expert_n_step": "${expert_dataset.n_step}"
+        },
+        "use_rlpd": true,
+        "expert_ratio": 0.3,
+        "use_adaptive_expert_ratio": true,
+        "adaptive_expert_ratio_start": 0.5,
+        "adaptive_expert_ratio_end": 0.1,
+        "adaptive_expert_ratio_steps": 10000,
+        "model": {
+          "_target_": "model.rl.distill_residual_rl.DistillResidualRLModel",
+          "obs_dim": "${obs_dim}",
+          "action_dim": "${action_dim}",
+          "noise_dim": "${noise_dim}",
+          "cond_steps": "${cond_steps}",
+          "horizon_steps": "${horizon_steps}",
+          "device": "${device}",
+          "condition_residual_on_base_action": false,
+          "num_multi_z_for_actor_loss": 16,
+          "use_n_step": "${replay_buffer.use_n_step}",
+          "n_step": "${replay_buffer.n_step}",
+          "pretrained_flow_policy_path": "${base_policy_path}",
+          "actor_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "critic_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "activation_type": "GELU",
+          "use_layernorm": true,
+          "bc_loss_weight": 100.0,
+          "critic_weight": 1.0,
+          "use_soft_q_filtering": false,
+          "q_filtering_warmup_steps": 3500,
+          "q_underestimation_threshold": -0.5,
+          "replay_flow_warmup_steps": 4000,
+          "use_q_normalization": true,
+          "disable_q_loss_for_expert_data": true,
+          "always_retain_bc_loss_for_expert_data": true,
+          "multi_sample_next_noise": true,
+          "num_next_noise_samples": 4,
+          "critic_ensemble_size": 10
+        },
+        "expert_dataset": {
+          "_target_": "agent.dataset.sequence.StitchedSequenceQLearningDataset",
+          "dataset_path": "data_dir/robomimic/${env_name}-low-dim/ph_finetune/train.npz",
+          "horizon_steps": "${horizon_steps}",
+          "cond_steps": "${cond_steps}",
+          "device": "${device}",
+          "discount_factor": "${train.gamma}",
+          "gamma": "${train.gamma}",
+          "max_n_episodes": 50,
+          "use_img": false,
+          "success_steps_for_termination": "${env.wrappers.robomimic_lowdim.success_steps_before_termination}",
+          "use_n_step": true,
+          "n_step": 3
+        },
+        "visualize_trajectories": false,
+        "visualization_freq": 200000000,
+        "num_eval_episodes": 10,
+        "eval_n_envs": 30,
+        "log_q_overestimation": true,
+        "online_explore_strategy": "max_q_min",
+        "evaluate_strategy": "max_q_min",
+        "num_exploration_samples": 16
+      }
+    },
+    "cfg/robomimic/finetune/square/ft_distill_residual_flow_unet_img.yaml": {
+      "sha256": "7791ad654d4089e4a1af0e46ffd7ce4a71c1474dfa9e0e31e88de939c6e45e39",
+      "config": {
+        "defaults": [
+          "_self_"
+        ],
+        "hydra": {
+          "run": {
+            "dir": "${logdir}"
+          },
+          "job": {
+            "chdir": false
+          }
+        },
+        "_target_": "agent.finetune.train_distill_residual_flow_img_agent.TrainDistillResidualFlowImgAgent",
+        "name": "${env_name}_ft_distill_residual_flow_unet_img_ta${horizon_steps}_fl${flow_steps}",
+        "logdir": "log_dir/robomimic-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}",
+        "base_policy_path": "log_dir/robomimic-pretrain/pretrained_bc_policy_square_img/checkpoint/state_2000.pt",
+        "robomimic_env_cfg_path": "cfg/robomimic/env_meta/${env_name}-img.json",
+        "normalization_path": "data_dir/robomimic/${env_name}-img/ph_pretrain/normalization.npz",
+        "seed": 42,
+        "device": "cuda:0",
+        "env_name": "square",
+        "run_eval": true,
+        "obs_dim": 9,
+        "action_dim": 7,
+        "use_6d_rot": false,
+        "abs_action": false,
+        "flow_steps": 10,
+        "cond_steps": 1,
+        "img_cond_steps": 1,
+        "horizon_steps": 4,
+        "act_steps": 4,
+        "noise_dim": 28,
+        "env": {
+          "n_envs": 8,
+          "name": "${env_name}",
+          "best_reward_threshold_for_success": 1,
+          "max_episode_steps": 400,
+          "save_video": false,
+          "use_image_obs": true,
+          "specific": {
+            "abs_action": "${abs_action}",
+            "use_6d_rot": "${use_6d_rot}"
+          },
+          "wrappers": {
+            "robomimic_image": {
+              "normalization_path": "${normalization_path}",
+              "success_steps_before_termination": 1,
+              "image_keys": [
+                "agentview_image",
+                "robot0_eye_in_hand_image"
+              ],
+              "low_dim_keys": [
+                "robot0_eef_pos",
+                "robot0_eef_quat",
+                "robot0_gripper_qpos"
+              ],
+              "shape_meta": "${shape_meta}",
+              "use_6d_rot": "${use_6d_rot}"
+            },
+            "multi_step": {
+              "n_obs_steps": "${cond_steps}",
+              "n_action_steps": "${act_steps}",
+              "max_episode_steps": "${env.max_episode_steps}",
+              "reset_within_step": true,
+              "gamma": "${train.gamma}"
+            }
+          }
+        },
+        "shape_meta": {
+          "obs": {
+            "rgb": {
+              "shape": [
+                96,
+                96,
+                6
+              ]
+            },
+            "state": {
+              "shape": [
+                9
+              ]
+            }
+          },
+          "action": {
+            "shape": [
+              7
+            ]
+          }
+        },
+        "wandb": {
+          "entity": null,
+          "project": "robomimic-${env_name}-distill-residual-flow-img-final",
+          "run": "${now:%Y-%m-%d_%H-%M-%S_%f}_${name}"
+        },
+        "train": {
+          "num_train_steps": 150000,
+          "val_freq": 10,
+          "n_steps": 100,
+          "n_train_itr": 1000,
+          "batch_size": 256,
+          "eval_freq": 1000,
+          "gamma": 0.99,
+          "tau": 0.01,
+          "update_freq": 1,
+          "gradient_steps": 20,
+          "actor_lr": "1e-4",
+          "critic_lr": "1e-4",
+          "actor_weight_decay": "1e-5",
+          "critic_weight_decay": "1e-5",
+          "use_lr_scheduler": true,
+          "lr_scheduler": {
+            "first_cycle_steps": 1000,
+            "warmup_steps": 10,
+            "min_lr": "1e-6"
+          },
+          "actor_update_freq": 2,
+          "critic_target_update_freq": 2,
+          "save_model_freq": 100,
+          "render": {
+            "freq": 1,
+            "num": 0
+          },
+          "log_freq": 1,
+          "max_grad_norm": 1.0
+        },
+        "replay_buffer": {
+          "max_size": 2000000,
+          "use_n_step": true,
+          "n_step": 3,
+          "expert_use_n_step": "${expert_dataset.use_n_step}",
+          "expert_n_step": "${expert_dataset.n_step}"
+        },
+        "use_rlpd": true,
+        "expert_ratio": 0.3,
+        "use_adaptive_expert_ratio": true,
+        "adaptive_expert_ratio_start": 0.5,
+        "adaptive_expert_ratio_end": 0.1,
+        "adaptive_expert_ratio_steps": 10000,
+        "model": {
+          "_target_": "model.rl.distill_residual_rl_img.DistillResidualRLImgModel",
+          "obs_dim": "${obs_dim}",
+          "action_dim": "${action_dim}",
+          "noise_dim": "${noise_dim}",
+          "cond_steps": "${cond_steps}",
+          "horizon_steps": "${horizon_steps}",
+          "device": "${device}",
+          "condition_residual_on_base_action": false,
+          "num_multi_z_for_actor_loss": 16,
+          "use_n_step": "${replay_buffer.use_n_step}",
+          "n_step": "${replay_buffer.n_step}",
+          "pretrained_flow_policy_path": "${base_policy_path}",
+          "actor_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "critic_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "activation_type": "GELU",
+          "use_layernorm": true,
+          "bc_loss_weight": 50.0,
+          "critic_weight": 1.0,
+          "use_soft_q_filtering": false,
+          "q_filtering_warmup_steps": 3000,
+          "q_underestimation_threshold": -0.25,
+          "replay_flow_warmup_steps": 3000,
+          "use_q_normalization": true,
+          "disable_q_loss_for_expert_data": true,
+          "always_retain_bc_loss_for_expert_data": true,
+          "multi_sample_next_noise": true,
+          "num_next_noise_samples": 4,
+          "critic_ensemble_size": 10
+        },
+        "expert_dataset": {
+          "_target_": "agent.dataset.sequence.StitchedSequenceQLearningDataset",
+          "dataset_path": "data_dir/robomimic/${env_name}-img/ph_finetune/train.npz",
+          "horizon_steps": "${horizon_steps}",
+          "cond_steps": "${cond_steps}",
+          "img_cond_steps": "${img_cond_steps}",
+          "device": "${device}",
+          "discount_factor": "${train.gamma}",
+          "gamma": "${train.gamma}",
+          "max_n_episodes": 50,
+          "use_img": true,
+          "success_steps_for_termination": "${env.wrappers.robomimic_image.success_steps_before_termination}",
+          "use_n_step": true,
+          "n_step": 3,
+          "use_6d_rot": "${use_6d_rot}",
+          "abs_action": "${abs_action}"
+        },
+        "visualize_trajectories": false,
+        "visualization_freq": 200000000,
+        "num_eval_episodes": 30,
+        "eval_n_envs": 10,
+        "log_q_overestimation": true,
+        "online_explore_strategy": "max_q_min",
+        "evaluate_strategy": "max_q_min",
+        "num_exploration_samples": 16
+      }
+    },
+    "cfg/robomimic/finetune/tool_hang/ft_distill_residual_flow_mlp.yaml": {
+      "sha256": "cb003e633156547bbbcb0f936611f763d85c849f119da243878cacd070159cc9",
+      "config": {
+        "defaults": [
+          "_self_"
+        ],
+        "hydra": {
+          "run": {
+            "dir": "${logdir}"
+          },
+          "job": {
+            "chdir": false
+          }
+        },
+        "_target_": "agent.finetune.train_distill_residual_flow_agent.TrainDistillResidualFlowAgent",
+        "name": "${env_name}_ft_distill_residual_flow_mlp_ta${horizon_steps}_fl${flow_steps}",
+        "logdir": "log_dir/robomimic-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}",
+        "base_policy_path": "log_dir/robomimic-pretrain/pretrained_bc_policy_${env_name}_low_dim/checkpoint/state_8000.pt",
+        "robomimic_env_cfg_path": "cfg/robomimic/env_meta/${env_name}.json",
+        "normalization_path": "data_dir/robomimic/${env_name}-low-dim/ph_pretrain/normalization.npz",
+        "seed": 42,
+        "device": "cuda:0",
+        "env_name": "tool_hang",
+        "run_eval": true,
+        "obs_dim": 53,
+        "action_dim": 7,
+        "flow_steps": 10,
+        "cond_steps": 1,
+        "horizon_steps": 8,
+        "act_steps": 8,
+        "noise_dim": 112,
+        "env": {
+          "n_envs": 4,
+          "name": "${env_name}",
+          "best_reward_threshold_for_success": 1,
+          "max_episode_steps": 700,
+          "save_video": false,
+          "wrappers": {
+            "robomimic_lowdim": {
+              "normalization_path": "${normalization_path}",
+              "success_steps_before_termination": 1,
+              "low_dim_keys": [
+                "robot0_eef_pos",
+                "robot0_eef_quat",
+                "robot0_gripper_qpos",
+                "object"
+              ]
+            },
+            "multi_step": {
+              "n_obs_steps": "${cond_steps}",
+              "n_action_steps": "${act_steps}",
+              "max_episode_steps": "${env.max_episode_steps}",
+              "reset_within_step": true,
+              "gamma": "${train.gamma}"
+            }
+          }
+        },
+        "wandb": {
+          "entity": null,
+          "project": "robomimic-${env_name}-distill-residual-flow-state",
+          "run": "${now:%Y-%m-%d_%H-%M-%S_%f}_${name}"
+        },
+        "train": {
+          "num_train_steps": 150000,
+          "val_freq": 10,
+          "n_steps": 200,
+          "n_train_itr": 1000,
+          "batch_size": 256,
+          "eval_freq": 1000,
+          "gamma": 0.99,
+          "tau": 0.01,
+          "update_freq": 1,
+          "gradient_steps": 10,
+          "actor_lr": "1e-4",
+          "critic_lr": "1e-4",
+          "actor_weight_decay": "1e-5",
+          "critic_weight_decay": "1e-5",
+          "use_lr_scheduler": true,
+          "lr_scheduler": {
+            "first_cycle_steps": 1000,
+            "warmup_steps": 10,
+            "min_lr": "1e-6"
+          },
+          "actor_update_freq": 2,
+          "critic_target_update_freq": 2,
+          "save_model_freq": 100,
+          "render": {
+            "freq": 1,
+            "num": 0
+          },
+          "log_freq": 1,
+          "max_grad_norm": 1.0
+        },
+        "replay_buffer": {
+          "max_size": 5000000,
+          "use_n_step": true,
+          "n_step": 5,
+          "expert_use_n_step": "${expert_dataset.use_n_step}",
+          "expert_n_step": "${expert_dataset.n_step}"
+        },
+        "use_rlpd": true,
+        "expert_ratio": 0.3,
+        "use_adaptive_expert_ratio": true,
+        "adaptive_expert_ratio_start": 0.7,
+        "adaptive_expert_ratio_end": 0.1,
+        "adaptive_expert_ratio_steps": 10000,
+        "model": {
+          "_target_": "model.rl.distill_residual_rl.DistillResidualRLModel",
+          "obs_dim": "${obs_dim}",
+          "action_dim": "${action_dim}",
+          "noise_dim": "${noise_dim}",
+          "cond_steps": "${cond_steps}",
+          "horizon_steps": "${horizon_steps}",
+          "device": "${device}",
+          "condition_residual_on_base_action": false,
+          "num_multi_z_for_actor_loss": 16,
+          "use_n_step": "${replay_buffer.use_n_step}",
+          "n_step": "${replay_buffer.n_step}",
+          "pretrained_flow_policy_path": "${base_policy_path}",
+          "actor_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "critic_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "activation_type": "GELU",
+          "use_layernorm": true,
+          "bc_loss_weight": 100.0,
+          "critic_weight": 1.0,
+          "use_soft_q_filtering": false,
+          "q_filtering_warmup_steps": 5000,
+          "q_underestimation_threshold": -0.55,
+          "replay_flow_warmup_steps": 4000,
+          "use_q_normalization": true,
+          "disable_q_loss_for_expert_data": true,
+          "always_retain_bc_loss_for_expert_data": true,
+          "multi_sample_next_noise": true,
+          "num_next_noise_samples": 4,
+          "critic_ensemble_size": 10
+        },
+        "expert_dataset": {
+          "_target_": "agent.dataset.sequence.StitchedSequenceQLearningDataset",
+          "dataset_path": "data_dir/robomimic/${env_name}-low-dim/ph_finetune/train.npz",
+          "horizon_steps": "${horizon_steps}",
+          "cond_steps": "${cond_steps}",
+          "device": "${device}",
+          "discount_factor": "${train.gamma}",
+          "gamma": "${train.gamma}",
+          "max_n_episodes": 50,
+          "use_img": false,
+          "success_steps_for_termination": "${env.wrappers.robomimic_lowdim.success_steps_before_termination}",
+          "use_n_step": true,
+          "n_step": 5
+        },
+        "visualize_trajectories": false,
+        "visualization_freq": 200000000,
+        "num_eval_episodes": 10,
+        "eval_n_envs": 30,
+        "log_q_overestimation": true,
+        "online_explore_strategy": "max_q_min",
+        "evaluate_strategy": "max_q_min",
+        "num_exploration_samples": 16
+      }
+    },
+    "cfg/robomimic/finetune/tool_hang/ft_distill_residual_flow_unet_img.yaml": {
+      "sha256": "e37ee4f357ba0f1b0c85f581e155a44c8b00566872748a2c92a10eb8b4f5009f",
+      "config": {
+        "defaults": [
+          "_self_"
+        ],
+        "hydra": {
+          "run": {
+            "dir": "${logdir}"
+          },
+          "job": {
+            "chdir": false
+          }
+        },
+        "_target_": "agent.finetune.train_distill_residual_flow_img_agent.TrainDistillResidualFlowImgAgent",
+        "name": "${env_name}_ft_distill_residual_flow_unet_img_ta${horizon_steps}_fl${flow_steps}",
+        "logdir": "log_dir/robomimic-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}",
+        "base_policy_path": "log_dir/robomimic-pretrain/pretrained_bc_policy_${env_name}_img/checkpoint/state_1400.pt",
+        "robomimic_env_cfg_path": "cfg/robomimic/env_meta/${env_name}-img.json",
+        "normalization_path": "data_dir/robomimic/${env_name}-img/ph_pretrain/normalization.npz",
+        "seed": 42,
+        "device": "cuda:0",
+        "env_name": "tool_hang",
+        "run_eval": true,
+        "obs_dim": 9,
+        "action_dim": 7,
+        "flow_steps": 20,
+        "cond_steps": 1,
+        "img_cond_steps": 1,
+        "horizon_steps": 8,
+        "act_steps": 8,
+        "noise_dim": 56,
+        "env": {
+          "n_envs": 8,
+          "name": "${env_name}",
+          "best_reward_threshold_for_success": 1,
+          "max_episode_steps": 700,
+          "save_video": false,
+          "use_image_obs": true,
+          "wrappers": {
+            "robomimic_image": {
+              "normalization_path": "${normalization_path}",
+              "success_steps_before_termination": 1,
+              "image_keys": [
+                "sideview_image",
+                "robot0_eye_in_hand_image"
+              ],
+              "low_dim_keys": [
+                "robot0_eef_pos",
+                "robot0_eef_quat",
+                "robot0_gripper_qpos"
+              ],
+              "shape_meta": "${shape_meta}"
+            },
+            "multi_step": {
+              "n_obs_steps": "${cond_steps}",
+              "n_action_steps": "${act_steps}",
+              "max_episode_steps": "${env.max_episode_steps}",
+              "reset_within_step": true,
+              "gamma": "${train.gamma}"
+            }
+          }
+        },
+        "shape_meta": {
+          "obs": {
+            "rgb": {
+              "shape": [
+                240,
+                240,
+                6
+              ]
+            },
+            "state": {
+              "shape": [
+                9
+              ]
+            }
+          },
+          "action": {
+            "shape": [
+              7
+            ]
+          }
+        },
+        "wandb": {
+          "entity": null,
+          "project": "robomimic-${env_name}-distill-residual-flow-img-final",
+          "run": "${now:%Y-%m-%d_%H-%M-%S_%f}_${name}"
+        },
+        "train": {
+          "num_train_steps": 150000,
+          "val_freq": 10,
+          "n_steps": 100,
+          "n_train_itr": 1000,
+          "batch_size": 256,
+          "eval_freq": 1000,
+          "gamma": 0.99,
+          "tau": 0.01,
+          "update_freq": 1,
+          "gradient_steps": 10,
+          "actor_lr": "1e-4",
+          "critic_lr": "1e-4",
+          "actor_weight_decay": "1e-5",
+          "critic_weight_decay": "1e-5",
+          "use_lr_scheduler": true,
+          "lr_scheduler": {
+            "first_cycle_steps": 1000,
+            "warmup_steps": 10,
+            "min_lr": "1e-6"
+          },
+          "actor_update_freq": 2,
+          "critic_target_update_freq": 2,
+          "save_model_freq": 100,
+          "render": {
+            "freq": 1,
+            "num": 0
+          },
+          "log_freq": 1,
+          "max_grad_norm": 1.0
+        },
+        "replay_buffer": {
+          "max_size": 2000000,
+          "use_n_step": true,
+          "n_step": 5,
+          "expert_use_n_step": "${expert_dataset.use_n_step}",
+          "expert_n_step": "${expert_dataset.n_step}"
+        },
+        "use_rlpd": true,
+        "expert_ratio": 0.3,
+        "use_adaptive_expert_ratio": true,
+        "adaptive_expert_ratio_start": 0.5,
+        "adaptive_expert_ratio_end": 0.1,
+        "adaptive_expert_ratio_steps": 10000,
+        "model": {
+          "_target_": "model.rl.distill_residual_rl_img.DistillResidualRLImgModel",
+          "obs_dim": "${obs_dim}",
+          "action_dim": "${action_dim}",
+          "noise_dim": "${noise_dim}",
+          "cond_steps": "${cond_steps}",
+          "horizon_steps": "${horizon_steps}",
+          "device": "${device}",
+          "condition_residual_on_base_action": false,
+          "num_multi_z_for_actor_loss": 16,
+          "use_n_step": "${replay_buffer.use_n_step}",
+          "n_step": "${replay_buffer.n_step}",
+          "pretrained_flow_policy_path": "${base_policy_path}",
+          "actor_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "critic_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "activation_type": "GELU",
+          "use_layernorm": true,
+          "bc_loss_weight": 100.0,
+          "critic_weight": 1.0,
+          "use_soft_q_filtering": false,
+          "q_filtering_warmup_steps": 4500,
+          "q_underestimation_threshold": -0.85,
+          "replay_flow_warmup_steps": 3000,
+          "use_q_normalization": true,
+          "disable_q_loss_for_expert_data": true,
+          "always_retain_bc_loss_for_expert_data": true,
+          "multi_sample_next_noise": true,
+          "num_next_noise_samples": 4,
+          "critic_ensemble_size": 10
+        },
+        "expert_dataset": {
+          "_target_": "agent.dataset.sequence.StitchedSequenceQLearningDataset",
+          "dataset_path": "data_dir/robomimic/${env_name}-img/ph_finetune/train.npz",
+          "horizon_steps": "${horizon_steps}",
+          "cond_steps": "${cond_steps}",
+          "img_cond_steps": "${img_cond_steps}",
+          "device": "${device}",
+          "discount_factor": "${train.gamma}",
+          "gamma": "${train.gamma}",
+          "max_n_episodes": 50,
+          "use_img": true,
+          "success_steps_for_termination": "${env.wrappers.robomimic_image.success_steps_before_termination}",
+          "use_n_step": true,
+          "n_step": 5
+        },
+        "visualize_trajectories": false,
+        "visualization_freq": 200000000,
+        "num_eval_episodes": 30,
+        "eval_n_envs": 10,
+        "log_q_overestimation": true,
+        "online_explore_strategy": "max_q_min",
+        "evaluate_strategy": "max_q_min",
+        "num_exploration_samples": 16
+      }
+    },
+    "cfg/robomimic/finetune/transport/ft_distill_residual_flow_mlp.yaml": {
+      "sha256": "bc890934d07d3e4c61c19bbbee1323db45bfc1cb4903dd8fa4e5a58e9d9eb8a5",
+      "config": {
+        "defaults": [
+          "_self_"
+        ],
+        "hydra": {
+          "run": {
+            "dir": "${logdir}"
+          },
+          "job": {
+            "chdir": false
+          }
+        },
+        "_target_": "agent.finetune.train_distill_residual_flow_agent.TrainDistillResidualFlowAgent",
+        "name": "${env_name}_ft_distill_residual_flow_mlp_ta${horizon_steps}_fl${flow_steps}",
+        "logdir": "log_dir/robomimic-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}",
+        "base_policy_path": "log_dir/robomimic-pretrain/pretrained_bc_policy_${env_name}_low_dim/checkpoint/state_4000.pt",
+        "robomimic_env_cfg_path": "cfg/robomimic/env_meta/${env_name}.json",
+        "normalization_path": "data_dir/robomimic/${env_name}-low-dim/ph_pretrain/normalization.npz",
+        "seed": 42,
+        "device": "cuda:0",
+        "env_name": "transport",
+        "run_eval": true,
+        "obs_dim": 59,
+        "action_dim": 14,
+        "flow_steps": 10,
+        "cond_steps": 1,
+        "horizon_steps": 8,
+        "act_steps": 8,
+        "noise_dim": 112,
+        "env": {
+          "n_envs": 4,
+          "name": "${env_name}",
+          "best_reward_threshold_for_success": 1,
+          "max_episode_steps": 700,
+          "save_video": false,
+          "wrappers": {
+            "robomimic_lowdim": {
+              "normalization_path": "${normalization_path}",
+              "success_steps_before_termination": 1,
+              "low_dim_keys": [
+                "robot0_eef_pos",
+                "robot0_eef_quat",
+                "robot0_gripper_qpos",
+                "robot1_eef_pos",
+                "robot1_eef_quat",
+                "robot1_gripper_qpos",
+                "object"
+              ]
+            },
+            "multi_step": {
+              "n_obs_steps": "${cond_steps}",
+              "n_action_steps": "${act_steps}",
+              "max_episode_steps": "${env.max_episode_steps}",
+              "reset_within_step": true,
+              "gamma": "${train.gamma}"
+            }
+          }
+        },
+        "wandb": {
+          "entity": null,
+          "project": "robomimic-${env_name}-distill-residual-flow-state",
+          "run": "${now:%Y-%m-%d_%H-%M-%S_%f}_${name}"
+        },
+        "train": {
+          "num_train_steps": 2000000,
+          "val_freq": 10,
+          "n_steps": 200,
+          "n_train_itr": 1000,
+          "batch_size": 256,
+          "eval_freq": 1000,
+          "gamma": 0.99,
+          "tau": 0.01,
+          "update_freq": 1,
+          "gradient_steps": 10,
+          "actor_lr": "1e-4",
+          "critic_lr": "1e-4",
+          "actor_weight_decay": "1e-5",
+          "critic_weight_decay": "1e-5",
+          "use_lr_scheduler": true,
+          "lr_scheduler": {
+            "first_cycle_steps": 1000,
+            "warmup_steps": 10,
+            "min_lr": "1e-6"
+          },
+          "actor_update_freq": 2,
+          "critic_target_update_freq": 2,
+          "save_model_freq": 100,
+          "render": {
+            "freq": 1,
+            "num": 0
+          },
+          "log_freq": 1,
+          "max_grad_norm": 1.0
+        },
+        "replay_buffer": {
+          "max_size": 5000000,
+          "use_n_step": true,
+          "n_step": 3,
+          "expert_use_n_step": "${expert_dataset.use_n_step}",
+          "expert_n_step": "${expert_dataset.n_step}"
+        },
+        "use_rlpd": true,
+        "expert_ratio": 0.3,
+        "use_adaptive_expert_ratio": true,
+        "adaptive_expert_ratio_start": 0.9,
+        "adaptive_expert_ratio_end": 0.1,
+        "adaptive_expert_ratio_steps": 10000,
+        "model": {
+          "_target_": "model.rl.distill_residual_rl.DistillResidualRLModel",
+          "obs_dim": "${obs_dim}",
+          "action_dim": "${action_dim}",
+          "noise_dim": "${noise_dim}",
+          "cond_steps": "${cond_steps}",
+          "horizon_steps": "${horizon_steps}",
+          "device": "${device}",
+          "condition_residual_on_base_action": false,
+          "num_multi_z_for_actor_loss": 16,
+          "use_n_step": "${replay_buffer.use_n_step}",
+          "n_step": "${replay_buffer.n_step}",
+          "pretrained_flow_policy_path": "${base_policy_path}",
+          "actor_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "critic_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "activation_type": "GELU",
+          "use_layernorm": true,
+          "bc_loss_weight": 100.0,
+          "critic_weight": 1.0,
+          "use_soft_q_filtering": false,
+          "q_filtering_warmup_steps": 3500,
+          "q_underestimation_threshold": -0.6,
+          "replay_flow_warmup_steps": 4000,
+          "use_q_normalization": true,
+          "disable_q_loss_for_expert_data": true,
+          "always_retain_bc_loss_for_expert_data": true,
+          "multi_sample_next_noise": true,
+          "num_next_noise_samples": 4,
+          "critic_ensemble_size": 10
+        },
+        "expert_dataset": {
+          "_target_": "agent.dataset.sequence.StitchedSequenceQLearningDataset",
+          "dataset_path": "data_dir/robomimic/${env_name}-low-dim/ph_finetune/train.npz",
+          "horizon_steps": "${horizon_steps}",
+          "cond_steps": "${cond_steps}",
+          "device": "${device}",
+          "discount_factor": "${train.gamma}",
+          "gamma": "${train.gamma}",
+          "max_n_episodes": 50,
+          "use_img": false,
+          "success_steps_for_termination": "${env.wrappers.robomimic_lowdim.success_steps_before_termination}",
+          "use_n_step": true,
+          "n_step": 3
+        },
+        "visualize_trajectories": false,
+        "visualization_freq": 200000000,
+        "num_eval_episodes": 10,
+        "eval_n_envs": 30,
+        "log_q_overestimation": true,
+        "online_explore_strategy": "max_q_min",
+        "evaluate_strategy": "max_q_min",
+        "num_exploration_samples": 16
+      }
+    },
+    "cfg/robomimic/finetune/transport/ft_distill_residual_flow_unet_img.yaml": {
+      "sha256": "68b5e9fca1e15a9f96964e119a2af9caf5964516a760f2ffa566c2605fcf69f7",
+      "config": {
+        "defaults": [
+          "_self_"
+        ],
+        "hydra": {
+          "run": {
+            "dir": "${logdir}"
+          },
+          "job": {
+            "chdir": false
+          }
+        },
+        "_target_": "agent.finetune.train_distill_residual_flow_img_agent.TrainDistillResidualFlowImgAgent",
+        "name": "${env_name}_ft_distill_residual_flow_unet_img_ta${horizon_steps}_fl${flow_steps}",
+        "logdir": "log_dir/robomimic-finetune/${name}/${now:%Y-%m-%d}_${now:%H-%M-%S}_${seed}",
+        "base_policy_path": "log_dir/robomimic-pretrain/pretrained_bc_policy_${env_name}_img/checkpoint/state_2400.pt",
+        "robomimic_env_cfg_path": "cfg/robomimic/env_meta/${env_name}-img.json",
+        "normalization_path": "data_dir/robomimic/${env_name}-img/ph_pretrain/normalization.npz",
+        "seed": 42,
+        "device": "cuda:0",
+        "env_name": "transport",
+        "run_eval": true,
+        "obs_dim": 18,
+        "action_dim": 14,
+        "flow_steps": 10,
+        "cond_steps": 1,
+        "img_cond_steps": 1,
+        "horizon_steps": 8,
+        "act_steps": 8,
+        "noise_dim": 112,
+        "env": {
+          "n_envs": 4,
+          "name": "${env_name}",
+          "best_reward_threshold_for_success": 1,
+          "max_episode_steps": 700,
+          "save_video": false,
+          "use_image_obs": true,
+          "wrappers": {
+            "robomimic_image": {
+              "normalization_path": "${normalization_path}",
+              "success_steps_before_termination": 1,
+              "image_keys": [
+                "robot0_eye_in_hand_image",
+                "robot1_eye_in_hand_image",
+                "shouldercamera0_image",
+                "shouldercamera1_image"
+              ],
+              "low_dim_keys": [
+                "robot0_eef_pos",
+                "robot0_eef_quat",
+                "robot0_gripper_qpos",
+                "robot1_eef_pos",
+                "robot1_eef_quat",
+                "robot1_gripper_qpos"
+              ],
+              "shape_meta": "${shape_meta}"
+            },
+            "multi_step": {
+              "n_obs_steps": "${cond_steps}",
+              "n_action_steps": "${act_steps}",
+              "max_episode_steps": "${env.max_episode_steps}",
+              "reset_within_step": true,
+              "gamma": "${train.gamma}"
+            }
+          }
+        },
+        "shape_meta": {
+          "obs": {
+            "rgb": {
+              "shape": [
+                96,
+                96,
+                12
+              ]
+            },
+            "state": {
+              "shape": [
+                18
+              ]
+            }
+          },
+          "action": {
+            "shape": [
+              14
+            ]
+          }
+        },
+        "wandb": {
+          "entity": null,
+          "project": "robomimic-${env_name}-distill-residual-flow-img-final",
+          "run": "${now:%Y-%m-%d_%H-%M-%S_%f}_${name}"
+        },
+        "train": {
+          "num_train_steps": 150000,
+          "val_freq": 10,
+          "n_steps": 100,
+          "n_train_itr": 1000,
+          "batch_size": 256,
+          "eval_freq": 1000,
+          "gamma": 0.99,
+          "tau": 0.01,
+          "update_freq": 1,
+          "gradient_steps": 10,
+          "actor_lr": "1e-4",
+          "critic_lr": "1e-4",
+          "actor_weight_decay": "1e-5",
+          "critic_weight_decay": "1e-5",
+          "use_lr_scheduler": true,
+          "lr_scheduler": {
+            "first_cycle_steps": 1000,
+            "warmup_steps": 10,
+            "min_lr": "1e-6"
+          },
+          "actor_update_freq": 2,
+          "critic_target_update_freq": 2,
+          "save_model_freq": 100,
+          "render": {
+            "freq": 1,
+            "num": 0
+          },
+          "log_freq": 1,
+          "max_grad_norm": 1.0
+        },
+        "replay_buffer": {
+          "max_size": 4000000,
+          "use_n_step": true,
+          "n_step": 3,
+          "expert_use_n_step": "${expert_dataset.use_n_step}",
+          "expert_n_step": "${expert_dataset.n_step}"
+        },
+        "use_rlpd": true,
+        "expert_ratio": 0.3,
+        "use_adaptive_expert_ratio": true,
+        "adaptive_expert_ratio_start": 0.9,
+        "adaptive_expert_ratio_end": 0.1,
+        "adaptive_expert_ratio_steps": 10000,
+        "model": {
+          "_target_": "model.rl.distill_residual_rl_img.DistillResidualRLImgModel",
+          "obs_dim": "${obs_dim}",
+          "action_dim": "${action_dim}",
+          "noise_dim": "${noise_dim}",
+          "cond_steps": "${cond_steps}",
+          "horizon_steps": "${horizon_steps}",
+          "device": "${device}",
+          "condition_residual_on_base_action": false,
+          "num_multi_z_for_actor_loss": 16,
+          "use_n_step": "${replay_buffer.use_n_step}",
+          "n_step": "${replay_buffer.n_step}",
+          "pretrained_flow_policy_path": "${base_policy_path}",
+          "actor_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "critic_hidden_dims": [
+            1024,
+            1024,
+            1024
+          ],
+          "activation_type": "GELU",
+          "use_layernorm": true,
+          "bc_loss_weight": 100.0,
+          "critic_weight": 1.0,
+          "use_soft_q_filtering": false,
+          "q_filtering_warmup_steps": 4000,
+          "q_underestimation_threshold": -0.55,
+          "replay_flow_warmup_steps": 3000,
+          "use_q_normalization": true,
+          "disable_q_loss_for_expert_data": true,
+          "always_retain_bc_loss_for_expert_data": true,
+          "multi_sample_next_noise": true,
+          "num_next_noise_samples": 4,
+          "critic_ensemble_size": 10
+        },
+        "expert_dataset": {
+          "_target_": "agent.dataset.sequence.StitchedSequenceQLearningDataset",
+          "dataset_path": "data_dir/robomimic/${env_name}-img/ph_finetune/train.npz",
+          "horizon_steps": "${horizon_steps}",
+          "cond_steps": "${cond_steps}",
+          "img_cond_steps": "${img_cond_steps}",
+          "device": "${device}",
+          "discount_factor": "${train.gamma}",
+          "gamma": "${train.gamma}",
+          "max_n_episodes": 50,
+          "use_img": true,
+          "success_steps_for_termination": "${env.wrappers.robomimic_image.success_steps_before_termination}",
+          "use_n_step": true,
+          "n_step": 3
+        },
+        "visualize_trajectories": false,
+        "visualization_freq": 200000000,
+        "num_eval_episodes": 30,
+        "eval_n_envs": 10,
+        "log_q_overestimation": true,
+        "online_explore_strategy": "max_q_min",
+        "evaluate_strategy": "max_q_min",
+        "num_exploration_samples": 16
+      }
+    }
+  }
+}

@@ -3,7 +3,10 @@ export RL_VLA_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$RL_VLA_ROOT/.venv/bin/activate"
 export PATH="$RL_VLA_ROOT/.venv/bin:$RL_VLA_ROOT/.cache/bootstrap/bin:$RL_VLA_ROOT/.cache/native/usr/bin:$PATH"
 export UV_CACHE_DIR="${UV_CACHE_DIR:-$RL_VLA_ROOT/.cache/uv}"
-export UV_PYTHON_INSTALL_DIR="${UV_PYTHON_INSTALL_DIR:-$RL_VLA_ROOT/.cache/python}"
+# This container may inherit /opt/uv/python, which is not persistent.
+if [[ "${UV_PYTHON_INSTALL_DIR:-}" != /workspace/* ]]; then
+  export UV_PYTHON_INSTALL_DIR="$RL_VLA_ROOT/.cache/python"
+fi
 export UV_LINK_MODE=copy
 export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$RL_VLA_ROOT/.cache}"
 export HF_HOME="${HF_HOME:-$RL_VLA_ROOT/.cache/huggingface}"
@@ -28,7 +31,7 @@ if [[ -n "${SSL_CERT_FILE:-}" && ( -z "${REQUESTS_CA_BUNDLE:-}" || ! -f "$REQUES
   export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE"
 fi
 export MUJOCO_GL="${MUJOCO_GL:-osmesa}" PYOPENGL_PLATFORM="${PYOPENGL_PLATFORM:-osmesa}"
-export LP_NUM_THREADS=1 NUMBA_CACHE_DIR="$RL_VLA_ROOT/.cache/numba"
+export LP_NUM_THREADS="${LP_NUM_THREADS:-1}" NUMBA_CACHE_DIR="$RL_VLA_ROOT/.cache/numba"
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMBA_NUM_THREADS=1
 # Retain the repository's Robosuite/Mesa workaround using Numba's Python fallbacks.
 # MuJoCo physics and Mesa rendering remain native.

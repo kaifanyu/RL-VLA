@@ -5,6 +5,78 @@ extension running on ManiSkill3. It is not registered by stock ManiSkill alone.
 The adapter imports exactly that extension from the existing pinned RLinf checkout;
 it does not substitute the simpler single-carrot task.
 
+## Standalone Docker setup (2026-10-31)
+
+From the repository root, run `bash integrations/multibench/maniskill/setup.sh --local`.
+The explicit flag permits this standalone container; the Slurm guard remains in
+place for the existing cluster workflow. Python 3.11.13, `.venv-maniskill3`, wheel
+caches, assets, and the optional lavapipe driver live under `/workspace` and persist
+with the workspace. The committed dependency lock stays unchanged; setup rewrites
+its old editable source path only into `runs/setup/maniskill/requirements-local.txt`.
+
+Use **CPU physics plus GPU Vulkan rendering** for this machine. The real plate-25
+smoke passed on physical GPU 3 (PCI `0000:07:00.0`, verified against its CUDA UUID).
+Nine ordinary controller steps averaged **0.101 s** with GPU rendering and
+**0.184 s** with lavapipe on eight CPU threads. Each includes 100 physics substeps,
+task checks and RGB readback. These are short diagnostic timings for one scene,
+not a broad simulator benchmark. Evidence is in
+`runs/local_setup_20261031/maniskill/render_comparison.json` and `smoke_{gpu,cpu}/`.
+Both tests check repeated resets, finite states, nonblank images and the native
+success oracle. The synthetic goal check is separate from policy evaluation.
+`policy_contract.json` also validates the real reset observation through the
+shared native OpenPI transforms: 32 padded state coordinates, one valid camera,
+two masked absent wrists, a 50-action prediction horizon and seven decoded motor
+coordinates. `ipc_smoke.json` checks the isolated worker communication.
+
+The container exposes its NVIDIA Vulkan ICD under `/etc/vulkan/icd.d`; SAPIEN
+3.0.3 does not discover that location automatically. The rollout worker sets
+`VK_DRIVER_FILES` and `VK_ICD_FILENAMES` explicitly. CPU fallback uses the isolated
+`.cache/native-maniskill/lvp_icd.json` prepared by `prepare_software_vulkan.py`.
+It does not replace the system driver. OSMesa settings used by MuJoCo do not select
+SAPIEN's Vulkan renderer.
+
+After the shared native OpenPI environment and checkpoint are installed, record
+a complete frozen base-policy episode with:
+
+```bash
+CUDA_VISIBLE_DEVICES=3 MANISKILL_CPUSET=24-31 \
+  bash integrations/multibench/maniskill/run_baseline.sh \
+  --render-backend gpu --output runs/my_maniskill_baseline
+```
+
+The output directory must be new. The default checkpoint is
+`checkpoints/openpi/pi05_base`; seed 20261029 selects `put fast food cup on plate`.
+The recorder uses the original base architecture and task calibration statistics,
+performs no parameter updates, executes five actions per policy decision, and
+records every controller step through native success or the 80-step limit.
+`baseline.mp4`, `report.json`, `steps.jsonl`, `actions_states.npz`, and first/last
+PNGs preserve the outcome, clipping, backend and timing evidence. A failed episode
+is still reported as failed; a diagnostic video is not a success-rate estimate.
+
+## Recorded baseline on this container
+
+The completed video is
+[`runs/local_setup_20261031/maniskill/baseline/baseline.mp4`](../../../runs/local_setup_20261031/maniskill/baseline/baseline.mp4).
+The unadapted native `pi05_base` policy attempted **put fast food cup on plate**
+with environment seed 20261029 and policy seed 100000. It executed all **80 control
+steps / 16 policy decisions** and timed out with **success=false**. The cup remained
+off the plate. This is an actual policy rollout, with no synthetic placement or
+parameter updates and no selection of a successful retry.
+
+The MP4 contains **81 frames at 5 fps**, 640×480, H.264, duration **16.2 s**.
+Full video decoding, frame counts, episode boundaries, finite actions/states,
+clipping, and native gripper conversion were checked against the JSONL and NPZ
+traces. Initial, midpoint and final frames were visually inspected. Ten of 560
+proposed action coordinates were clipped to native bounds. Total wall time was
+176.74 s, including 23.93 s model loading, 91.20 s simulator initialization,
+53.31 s policy inference (including first compilation), and 7.66 s stepping.
+
+The video directory contains `report.json`, `validation.json`,
+`decision_timing.json`, `steps.jsonl`, `actions_states.npz`, and the inspected PNGs.
+The full installation evidence is in the parent `maniskill/` run directory,
+including `environment.json`, `policy_contract.json`, `ipc_smoke.json`,
+`render_comparison.json`, and `code_validation.json`.
+
 ## Sources and revisions
 
 - [Official RLinf task guide](https://rlinf.readthedocs.io/en/latest/rst_source/examples/embodied/maniskill.html)
@@ -14,8 +86,9 @@ it does not substitute the simpler single-carrot task.
 - [Normalization metadata](https://huggingface.co/RLinf/RLinf-Pi05-ManiSkill-25Main-SFT/tree/eb0e2c90726f7f0bdf99e8c9b6656917f0eb5030), assets only; **no SFT weights are downloaded or used**
 
 `requirements.lock` records the complete isolated `.venv-maniskill3` environment.
-`assets_manifest.json` records downloaded file hashes. `setup.sh` is intended for
-an allocated compute step, with CUDA hidden during installation/downloads.
+`assets_manifest.json` records downloaded file hashes. `setup.sh` runs inside
+an allocated compute step, or with `--local` in this Docker container, with CUDA
+hidden during installation/downloads.
 The upstream downloader verifies the Bridge scene archive against SHA256
 `618512a205b4528cafecdad14b1788ed1130879f3064deb406516ed5b9c5ba92`.
 The WidowX model is the upstream `ManiSkill-WidowX250S` v0.2.0 asset.
@@ -66,7 +139,9 @@ is useful for the robot interface, but it is not SFT. Preserve the raw base
 architecture, including its action horizon and state-token setting. Results from
 this campaign cannot be described as reproducing the paper's SFT baseline.
 
-## Real validation
+## Historical cluster validation
+
+The evidence in this section predates the standalone container setup above.
 
 `smoke.py` builds the actual scene, checks two distinct task resets and a repeated
 reset, verifies nonblank RGB and finite eight-dimensional proprioception,

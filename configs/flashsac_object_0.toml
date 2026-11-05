@@ -1,0 +1,113 @@
+# FlashSAC residual RL on LIBERO-PRO Object 0 using the canonical Oct31 RLDT/DICE-RL states.
+# Same method settings as configs/flashsac_object_00.toml; this differs only in state set, output
+# directory and server paths. States come from scripts/make_flashsac_canonical_state_set.py and
+# must not be regenerated, so this config has no state generation section.
+algorithm = "flashsac_pro_residual"
+experiment = "flashsac_object_0"     # experiment name, not a task name
+output_dir = "runs/flashsac_object_0"
+
+[task]
+label = "Object 0"
+# Requested by the user on 2026-11-03: the RLDT campaign's object_0, LIBERO Object task 0,
+# "pick up the alphabet soup and place it in the basket", PRO Position variant. In the robustness
+# queue the frozen base succeeds 21/45 on this case (Object 15/45, Language 44/45, Task 3/45).
+label_resolution = "user: RLDT object_0 = LIBERO Object task 0 (alphabet soup into basket); PRO Position variant"
+benchmark = "pro"
+suite = "libero_object"
+category = "Position"                  # Object | Position | Language | Task (Environment unsupported)
+task_id = 0                            # index into libero_suite_task_map[f"{suite}_swap"]
+expected_case_id = "pro_libero_object_6b0ff024b794ff53"
+frozen_protocol = ""   # The robustness queue records were not migrated to this server.
+# Canonical Oct31 states: ids 0-99 train, 100-149 validation, 150-199 published PRO test.
+state_set = "runs/pro_state_sets/object_0_canonical_oct31"
+
+[contract]
+# Shared Object 0 contract (team_artifacts/smrithi/rl-vla-comparison-audit/benchmark_draft.yaml).
+name = "libero_pro_object0_three_method_draft_v2"
+eval_seed_start = 100000                # Reset seed and JAX noise key 100000 + i for ordered split id i.
+train_reset = "seed_plus_episode"       # Same state schedule as rl_vla.envs.libero_pro.
+retention_env = "source_protocol"       # RLDT's source split: PRO fork and BDDL instruction.
+budget = "strict"                       # Stop at exactly total_env_steps; validate at exact milestones.
+states_sha256 = "9f4d57d3368a345730395ff5955b4c6c377ed01a3f17c607cbfbaa3523219af2"
+bddl_sha256 = "fb1a2a7457cb6b885366915d470c1837830eb0b2422634483bb34380e33acf95"
+base_parameter_sha256 = "a7b7519f90a435bbe01a8deb8757109a2433229f13e250fd54be894563f93480"
+
+[split]
+# With a state set the roles are fixed by it: ids 0-99 train, 100-149 validation (generated),
+# 150-199 test (= published PRO states 0-49). These counts must match the state set.
+train = 100
+validation = 50
+test = 50
+retention_initial_states = 50   # original LIBERO task with the same name, evaluation only
+
+[simulator]
+pro_python = ".venv-pro/bin/python"
+original_python = ".venv/bin/python"
+# max_steps: unset = suite horizon (Object 280). Only --smoke / --max-episode-steps change it.
+renderer = "osmesa"    # chosen 2026-11-03 for training, validation and test: bit-repeatable and the
+                       # queue protocol (CPU). "egl" is about 2.5x faster per env step but not
+                       # repeatable, which adds noise to checkpoint selection.
+
+[base]
+checkpoint = "checkpoints/openpi/pi05_libero"
+model_config = "pi05_libero"
+action_horizon = 10    # pi05_libero chunk length
+execute_steps = 5      # actions executed per base query (same as the queue / baseline)
+noise_protocol = "jax-prngkey-split-normal-v1"   # The rl_vla.rldt.evaluate noise stream.
+backend = "pi05_flow"  # Pi05Flow, the RLDT and DICE-RL inference path (float32 action expert).
+ode_steps = 10
+
+[residual]
+# Order: x, y, z, rx, ry, rz, gripper, in normalized LIBERO OSC units
+# (1.0 = 0.05 m or 0.5 rad per 0.05 s control step; gripper -1 open / +1 close).
+# Max correction = scale. Gripper scale 0: gripper always follows the base.
+scale = [0.1, 0.1, 0.1, 0.05, 0.05, 0.05, 0.0]
+action_low = [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0]
+action_high = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+use_vlm_features = true   # frozen pi0.5 prefix features in the actor/critic input
+eval_deterministic = true
+gamma = 0.99              # per environment step
+
+[flashsac]
+actor_num_blocks = 2
+actor_hidden_dim = 128
+critic_num_blocks = 2
+critic_hidden_dim = 256
+critic_num_bins = 101
+normalized_g_max = 5.0
+normalize_reward = true
+learning_rate = 0.0003
+learning_rate_end = 0.00015
+lr_decay_updates = 16000   # total_env_steps * updates_per_step for the full run
+tau = 0.01
+actor_update_period = 2
+initial_temperature = 0.01
+target_sigma = 0.05        # entropy target, in normalized residual units
+initial_log_std = -3.0     # initial exploration std exp(-3) ~= 0.05 of the scale
+
+[train]
+seed = 0
+device = "auto"            # cuda when available (learner); pi0.5 always runs in JAX on the GPU
+total_env_steps = 16000    # RLDT budget: 100 iterations x 32 decisions x 5 steps (upper bound)
+learning_starts = 2000
+batch_size = 256
+updates_per_step = 1
+replay_capacity = 100000
+log_every_steps = 200
+checkpoint_every_steps = 4000
+validate_every_steps = 4000
+validate_at_steps = [4000, 8000, 12000, 16000]   # RLDT iterations 25 / 50 / 75 / 100; overrides validate_every_steps
+validate_at_start = true
+validation_states = "all"
+save_replay = true
+torch_threads = 2
+max_gpu_memory_gib = 46.0      # stay below the robustness queue's 48 GiB pause threshold
+max_gpu_temperature_c = 77.0
+max_workspace_gib = 2300.0     # test-box-1: /workspace held 2065 GiB with about 457 GB free on 2026-11-05
+
+[record]
+train_every_episodes = 25
+max_train_recordings = 8
+validation_videos = false
+policy_inputs = "npz"          # exact policy-input arrays; images also appear in each <prefix>_combined.mp4
+object_poses = true            # logging only; never part of any policy input

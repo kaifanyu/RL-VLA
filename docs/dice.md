@@ -1,5 +1,7 @@
 # DICE–OpenPI pi0.5 integration
 
+The 2026-11-05 [fidelity audit, matrix, profiles and validated launch commands](dice-fidelity/report.md) supersede the pilot recipe below for paper-algorithm work. Existing `dice_pi05_*` configs retain legacy pilot settings; new `dice_paper_*`, `dice_audit_*` and `dice_bestof16_*` configs separate paper semantics, online-only benchmark ablation and inference cost. The remaining description is of the original pilot, not a claim of paper fidelity.
+
 This is a project-specific adaptation of **From Prior to Pro: Efficient Skill
 Mastery via Distribution Contractive RL Finetuning** (Sun and Song, 2026).
 Paper/project: https://zhanyisun.github.io/dice.rl.2026/

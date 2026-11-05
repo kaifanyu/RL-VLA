@@ -243,7 +243,8 @@ class LiberoEnv(gym.Env):
         self.backend.reset()
         raw = self.backend.set_init_state(self.initial_states[selected].copy())
         for _ in range(self.settle_steps):
-            raw, _, done, _ = self.backend.step(SETTLING_ACTION.tolist())
+            from rl_vla.attempt_accounting import command_call
+            raw, _, done, _ = command_call(self.backend.step, SETTLING_ACTION.tolist(), settling=True)
             if done or bool(self.backend.check_success()):
                 raise RuntimeError(
                     "LIBERO task ended during reset settling; choose another initial_state_id"
@@ -276,7 +277,8 @@ class LiberoEnv(gym.Env):
                 "LIBERO actions must be seven finite normalized OSC/gripper commands in [-1,1]"
             )
         self._needs_reset = True
-        raw, native_reward, done, native_info = self.backend.step(action.tolist())
+        from rl_vla.attempt_accounting import command_call
+        raw, native_reward, done, native_info = command_call(self.backend.step, action.tolist())
         self.steps += 1
         success = bool(self.backend.check_success())
         terminated = success

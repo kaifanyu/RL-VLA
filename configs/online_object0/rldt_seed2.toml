@@ -1,0 +1,64 @@
+algorithm = "rldt"
+
+[policy]
+kind = "pi05"
+checkpoint = "/workspace/upenn/RL-VLA/checkpoints/openpi/pi05_libero"
+model_config = "pi05_libero"
+projection_only = false
+
+[env]
+kind = "external"
+factory = "rl_vla.envs.libero_pro:make_env"
+python = "/workspace/upenn/RL-VLA/.venv-pro/bin/python"
+
+[env.kwargs]
+protocol = "/workspace/upenn/RL-VLA/runs/vla_trace_objects_20261031/tasks/object_0/protocol.json"
+task_key = "object_0"
+split = "train"
+
+[train]
+seed = 2
+iterations = 100
+collect_decisions = 32
+critic_steps = 64
+actor_steps = 4
+critic_batch_size = 64
+actor_batch_size = 1
+critic_trajectories = 2
+replay_capacity = 4096
+save_every = 25
+max_controller_commands = 16000
+command_milestones = [0, 4000, 8000, 12000, 16000]
+
+[rldt]
+ode_steps = 10
+execute_steps = 5
+particles = 8
+kappa0 = 0.001
+kernel_mode = "official"
+reference = "moving"
+consistency_weight = 0.5
+constraint_weight = 0.2
+actor_lr = 2e-05
+actor_warmup_steps = 32
+max_grad_norm = 1.0
+critic_lr = 0.001
+critic_width = 256
+critic_warmup_iterations = 2
+target_momentum = 0.995
+gamma = 0.999
+td_lambda = 0.5
+bootstrap_samples = 2
+clip_bootstrap = true
+balanced_replay = true
+fresh_fraction = 0.33
+
+[recording]
+enabled = false
+
+[benchmark]
+fresh_uninterrupted = true
+evaluation_k = 1
+test_scope = "reused"
+checkpoint_phase = "post-command pre-current-chunk updates"
+recording_policy = "primary outcomes and ledger only; optional videos separate"

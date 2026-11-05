@@ -1,12 +1,28 @@
 """Portable resource checks and episode-boundary restart state for DICE."""
 
 import os
+import hashlib
 import shutil
 import subprocess
 from pathlib import Path
 
 import numpy as np
 import torch
+
+
+def source_manifest():
+    """Hash the actual adapter/learner sources, including shared dirty files."""
+    root = Path(__file__).resolve().parents[2]
+    files = list((root / "src/rl_vla").glob("dice*.py")) + [
+        root / name
+        for name in (
+            "src/rl_vla/rldt_pi05.py",
+            "src/rl_vla/rldt_env.py",
+            "src/rl_vla/envs/libero.py",
+            "src/rl_vla/envs/libero_pro.py",
+        )
+    ]
+    return {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
 
 
 def expert_fraction(data, step):
@@ -62,6 +78,7 @@ def save_training(path, learner, config, prior, counters, replay, rng):
         "replay": list(replay),
         "numpy_rng": rng.bit_generator.state,
         "torch_rng": torch.get_rng_state(),
+        "torch_cuda_rng": torch.cuda.get_rng_state_all() if torch.cuda.is_initialized() else None,
         "prior_rng": prior_rng,
     }
     temporary = Path(path).with_suffix(".tmp")
@@ -88,10 +105,15 @@ def restore_training(path, learner, config, prior, replay, rng):
     completed = value["counters"]["episodes"]
     if completed >= config["train"]["episodes"]:
         raise ValueError("Requested episode budget has already been completed")
+    cap = config["train"].get("max_steps")
+    if cap is not None and value["counters"].get("controller_steps", 0) >= cap:
+        raise ValueError("Requested controller budget has already been completed")
     learner.load_state_dict(value["learner"])
     replay.extend(value["replay"])
     rng.bit_generator.state = value["numpy_rng"]
     torch.set_rng_state(value["torch_rng"])
+    if value.get("torch_cuda_rng") is not None:
+        torch.cuda.set_rng_state_all(value["torch_cuda_rng"])
     if value["prior_rng"] is not None:
         import jax
 

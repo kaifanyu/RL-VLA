@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -95,13 +96,18 @@ def make_env(*, protocol, task_key, split):
         horizon=max(1000, task["max_steps"] + 11),
     )
     try:
-        return SplitLiberoEnv(
+        env = SplitLiberoEnv(
             state_ids=state_ids, split=split, task_suite=task["suite"],
             task_id=task["task_id"], max_steps=task["max_steps"],
             camera_resolution=256, resize_size=224, settle_steps=10,
             backend=backend, initial_states=states,
             task_description=backend.language_instruction,
         )
+        if os.environ.get("RL_VLA_OBJECT_TELEMETRY") == "1":
+            from rl_vla.envs.object_telemetry import ObjectTelemetryEnv
+
+            return ObjectTelemetryEnv(env)
+        return env
     except Exception:
         backend.close()
         raise

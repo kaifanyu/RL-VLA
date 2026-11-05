@@ -7,6 +7,13 @@ consistency, and reference-velocity objectives. Two learned critics provide the
 action gradients. The existing SAC/PPO residual-policy commands are separate
 experiments.
 
+For general `pi05_base` initialization and rank-128 action-expert adapters on
+Object 0, see the [base-policy LoRA recipe](rldt-pi05-base-object0-lora128.md).
+For adapters in PaliGemma's vision-language transformer with a frozen motor
+expert, see [VLM-backbone LoRA](rldt-vlm-lora.md).
+That opt-in configuration uses explicit LIBERO calibration, horizon 50 and
+state tokens; the default full-expert `pi05_libero` recipe below is unchanged.
+
 The implementation follows the supplied [16-page paper](../rldt.pdf), including
 Algorithm 1 and the appendices, cross-checked against the
 [official implementation at commit `3ab73e7`](https://github.com/RPFey/rldt/tree/3ab73e775efd0f041ad28170c616146be86bb6ea).
