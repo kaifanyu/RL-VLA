@@ -11,6 +11,22 @@ from rl_vla.attempt_accounting import command_call, summarize, reject_restart
 from rl_vla.benchmark_contract import MILESTONES, choose, resolve
 
 
+def test_method_readiness_does_not_promote_other_methods():
+    from rl_vla.benchmark_contract import require_ready
+    readiness = {'production_ready': False, 'blockers': ['DICE parity failed'],
+                 'methods': {'rldt': {'production_ready': True, 'blockers': []}}}
+    require_ready(readiness, 'rldt')
+    for method in ['dice', 'flashsac', 'unknown']:
+        with pytest.raises(RuntimeError, match='DICE parity failed'):
+            require_ready(readiness, method)
+    readiness['methods']['rldt']['blockers'] = ['RLDT check failed']
+    with pytest.raises(RuntimeError, match='RLDT check failed'):
+        require_ready(readiness, 'rldt')
+    with pytest.raises(RuntimeError, match='No readiness evidence'):
+        require_ready({}, 'rldt')
+    require_ready({'production_ready': True}, 'rldt')
+
+
 def test_ledger_completion_and_uncertain_bounds(tmp_path, monkeypatch):
     monkeypatch.setenv('RL_VLA_ATTEMPT_DIR',str(tmp_path));monkeypatch.setenv('RL_VLA_ATTEMPT_ID','fixture_attempt');monkeypatch.setenv('RL_VLA_ATTEMPT_PHASE','training')
     assert command_call(lambda a:4,[0.]*7)==4

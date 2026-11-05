@@ -9,6 +9,17 @@ ASSET_ROOT = Path('/workspace/upenn/RL-VLA')
 MILESTONES = [0, 4000, 8000, 12000, 16000]
 
 
+def require_ready(readiness, method):
+    """Admit a reviewed method without promoting the whole three-method pilot."""
+    if readiness.get('production_ready') is True:
+        return
+    entry = readiness.get('methods', {}).get(method, {})
+    if entry.get('production_ready') is True and not entry.get('blockers'):
+        return
+    blockers = entry.get('blockers') or readiness.get('blockers') or ['No readiness evidence']
+    raise RuntimeError(f'Production blocked for {method}: ' + '; '.join(blockers))
+
+
 def canonical_hash(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 

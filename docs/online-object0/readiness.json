@@ -1,6 +1,6 @@
 {
   "production_ready": false,
-  "scope": "seed0-only three-method pilot; no production launched",
+  "scope": "Seed0 pilot: RLDT individually reviewed; full three-method queue remains blocked by DICE",
   "blockers": [
     "DICE serial versus microbatched frozen proposal maximum action discrepancy0.05563008785247803 exceeds declared1e-4; do not relax tolerance silently",
     "Full-shape CPU/GPU learner update and updated optimizer/RNG/replay equivalence check was skipped because proposal parity failed"
@@ -11,5 +11,21 @@
     "failed": 0,
     "seconds": 56.08,
     "log": "/workspace/smrithi/object0-launch-readiness-20261105/evidence/tests_final.log"
+  },
+  "methods": {
+    "rldt": {
+      "production_ready": true,
+      "blockers": [],
+      "scope": "Unchanged seed0 16000-command RLDT configuration; K1 five-checkpoint validation and paired tests",
+      "review_date": "2026-11-05",
+      "resolved_config_sha256": "9325840f30283ed0629b44aa607c5f561acfaf96a4046fb6b5ec7e562ff8a928",
+      "evidence": {
+        "/workspace/smrithi/rldt-object0-seed0-launch-20261105/preflight.json": "8c07382071971ecfcf3d39034607f94bc71554e74c217f5bd1b44dd030e3b210",
+        "/workspace/smrithi/rldt-object0-seed0-launch-20261105/review.json": "82d78eb605c3759b9be7a3165fcea43c0d516198538fa06cf2b6f15e8fdcee09",
+        "/workspace/smrithi/rldt-object0-seed0-launch-20261105/validation_smoke_summary.json": "194724ec94f070e56c5b4a85c089cec01b42077dc657d531703e98bc9d5fe8c4",
+        "/workspace/smrithi/object0-launch-readiness-20261105/rldt_runtime_v2/result.json": "42d5a9ade5d067bc426cb6e1f5d877ce778e4248fa64f54cbc16cc0840a5b888",
+        "/workspace/smrithi/object0-launch-readiness-20261105/primary_frozen_parity.json": "23a782dede2ebd73f9b67ef600f010098835239a5e3418ce22e0ec6b6d4b3fec"
+      }
+    }
   }
 }

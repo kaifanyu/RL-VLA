@@ -10,7 +10,7 @@ import time
 import uuid
 import sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
-from rl_vla.benchmark_contract import ROOT, MILESTONES, resolve, choose, canonical_hash
+from rl_vla.benchmark_contract import ROOT, MILESTONES, resolve, choose, canonical_hash, require_ready
 from rl_vla.attempt_accounting import append_durable, summarize
 
 
@@ -26,8 +26,7 @@ def main():
     if a.dry_run:
         print(json.dumps({'attempt_directory_pattern':str(out),'method':a.method,'seed':a.seed,'config':str(path),'resolved_config':config,'resolved_config_sha256':canonical_hash(config),'training':training_command(a.method,path,out),'milestones':MILESTONES,'retention':a.retention,'best_of16':a.best_of_16},indent=2));return
     readiness=json.loads((ROOT/'docs/online-object0/readiness.json').read_text())
-    if not readiness['production_ready']:
-        raise RuntimeError('Production blocked by unresolved verification: '+ '; '.join(readiness['blockers']))
+    require_ready(readiness, a.method)
     # Keep the existing guard; reserve sufficient headroom for primary compact outputs.
     used=int(subprocess.check_output(['du','-sb','/workspace'],text=True).split()[0])/2**30
     if used+30 >=2300:raise RuntimeError('Need30GiB atomic-save/output headroom below the unchanged2300GiB storage guard')
@@ -35,6 +34,8 @@ def main():
     env=os.environ.copy();env.update(CUDA_VISIBLE_DEVICES=a.gpu,PYTHONPATH=str(ROOT/'src'),RL_VLA_ATTEMPT_DIR=str(out),RL_VLA_ATTEMPT_ID=attempt_id,MUJOCO_GL='osmesa',PYOPENGL_PLATFORM='osmesa',LIBERO_CONFIG_PATH=str(ROOT/'.cache/libero-pro'))
     sources={str(x.relative_to(ROOT)):__import__('hashlib').sha256(x.read_bytes()).hexdigest() for folder in [ROOT/'src/rl_vla',ROOT/'configs/online_object0'] for x in sorted(folder.rglob('*')) if x.is_file() and '__pycache__' not in str(x)}
     meta={'created_time_ns':time.time_ns(),'launcher_pid':os.getpid(),'attempt_id':attempt_id,'method':a.method,'seed':a.seed,'status':'created','resolved_config':config,'resolved_config_sha256':canonical_hash(config),'sources':sources,'attempt_policy':'fresh uninterrupted; never restart in this directory','test_scope':'reused states; no blind confirmation','retention':a.retention,'best_of16':a.best_of_16}
+    meta['readiness'] = readiness
+    meta['sources']['scripts/launch_online_object0.py'] = __import__('hashlib').sha256(Path(__file__).read_bytes()).hexdigest()
     def save_meta():
         tmp=out/'attempt.tmp';tmp.write_text(json.dumps(meta,indent=2)+'\n');tmp.replace(out/'attempt.json')
     save_meta()
