@@ -21,6 +21,8 @@ def main():
     result['command_template']=[str(ROOT/'third_party/openpi/.venv/bin/python'),str(ROOT/'scripts/launch_online_object0.py'),'--method','METHOD','--seed','0','--gpu','ASSIGNED_GPU','--output-root',str(a.output_root.resolve())]
     print(json.dumps(result,indent=2),flush=True)
     if not a.execute:return
+    readiness=json.loads((ROOT/'docs/online-object0/readiness.json').read_text())
+    if not readiness['production_ready']:raise RuntimeError('Production readiness gate is closed; see docs/online-object0/readiness.json')
     for slot in result['slots']:
         used=int(subprocess.check_output(['nvidia-smi','--id',slot['gpu'],'--query-gpu=memory.used','--format=csv,noheader,nounits'],text=True).strip())
         if used>1024:raise RuntimeError(f"Assigned GPU{slot['gpu']} is occupied ({used}MiB); preserving that job")

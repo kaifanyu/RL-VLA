@@ -25,6 +25,9 @@ def main():
     out=a.output_root.resolve()/f'{a.method}_seed{a.seed}'/attempt_id
     if a.dry_run:
         print(json.dumps({'attempt_directory_pattern':str(out),'method':a.method,'seed':a.seed,'config':str(path),'resolved_config':config,'resolved_config_sha256':canonical_hash(config),'training':training_command(a.method,path,out),'milestones':MILESTONES,'retention':a.retention,'best_of16':a.best_of_16},indent=2));return
+    readiness=json.loads((ROOT/'docs/online-object0/readiness.json').read_text())
+    if not readiness['production_ready']:
+        raise RuntimeError('Production blocked by unresolved verification: '+ '; '.join(readiness['blockers']))
     # Keep the existing guard; reserve sufficient headroom for primary compact outputs.
     used=int(subprocess.check_output(['du','-sb','/workspace'],text=True).split()[0])/2**30
     if used+30 >=2300:raise RuntimeError('Need30GiB atomic-save/output headroom below the unchanged2300GiB storage guard')

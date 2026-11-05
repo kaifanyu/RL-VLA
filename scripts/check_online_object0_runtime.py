@@ -35,6 +35,7 @@ def main():
         gc.collect()
         from rl_vla.rldt import evaluate
         ev=copy.deepcopy(c);ev['env']['kwargs']['split']='validation'
+        os.environ['RL_VLA_ATTEMPT_PHASE']='diagnostic_validation'
         evaluation_started=time.monotonic();report=evaluate(ev,out/'frozen_validation_diagnostic.json',episodes=1,seed=100000)
         result['normal_horizon_frozen_evaluation']={'seconds':time.monotonic()-evaluation_started,'episodes':report['episodes'],'diagnostic_only':True}
     elif a.method=='dice':
@@ -60,6 +61,7 @@ def main():
         import gc;gc.collect()
         from rl_vla.dice_eval import evaluate
         ev=copy.deepcopy(c);ev['env']['kwargs']['split']='validation'
+        os.environ['RL_VLA_ATTEMPT_PHASE']='diagnostic_validation'
         evaluation_started=time.monotonic();evaluate(ev,out/'frozen_validation_diagnostic',episodes=1,seed=100000,diagnostic=True)
         result['normal_horizon_frozen_evaluation']={'seconds':time.monotonic()-evaluation_started,'summary':json.loads((out/'frozen_validation_diagnostic/summary.json').read_text()),'diagnostic_only':True}
     else:
