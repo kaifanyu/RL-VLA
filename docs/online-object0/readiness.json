@@ -3,8 +3,13 @@
   "scope": "seed0-only three-method pilot; no production launched",
   "blockers": [
     "DICE serial versus microbatched frozen proposal maximum action discrepancy0.05563008785247803 exceeds declared1e-4; do not relax tolerance silently",
-    "Full-shape CPU/GPU learner update and updated optimizer/RNG/replay equivalence check was skipped because proposal parity failed",
-    "Review final detached regression-test result before readiness promotion"
+    "Full-shape CPU/GPU learner update and updated optimizer/RNG/replay equivalence check was skipped because proposal parity failed"
   ],
-  "handoff": "/workspace/smrithi/object0-launch-readiness-20261105/HANDOFF.md"
+  "handoff": "/workspace/smrithi/object0-launch-readiness-20261105/HANDOFF.md",
+  "final_regression_tests": {
+    "passed": 115,
+    "failed": 0,
+    "seconds": 56.08,
+    "log": "/workspace/smrithi/object0-launch-readiness-20261105/evidence/tests_final.log"
+  }
 }
