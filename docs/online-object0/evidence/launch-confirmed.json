@@ -1,0 +1,43 @@
+{
+  "attempt": "/workspace/upenn/RL-VLA/team_artifacts/smrithi/rldt-object0-seed0-launch-20261105/runs/rldt_seed0/20261105T222143Z_f8cd0a971c784e42933c99e7e51dd851",
+  "training_log": "/workspace/upenn/RL-VLA/team_artifacts/smrithi/rldt-object0-seed0-launch-20261105/runs/rldt_seed0/20261105T222143Z_f8cd0a971c784e42933c99e7e51dd851/training.log",
+  "training_pid": 1312623,
+  "tmux_session": "rldt_object0_seed0",
+  "gpu": 0,
+  "cpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "source_commit": "fde81e0e5327b246a609329e883cefebd3616fae",
+  "production_launched": true,
+  "latest_metrics": {
+    "iterations": 1,
+    "decisions": 32,
+    "primitive_steps": 159,
+    "episodes": 1,
+    "successes": 1,
+    "actor_updates": 0,
+    "critic_updates": 64,
+    "elapsed_seconds": 185.6304379950161,
+    "checkpoint_validation_seconds": 0.0,
+    "replay_decisions": 32,
+    "metrics": {
+      "critic_loss": 6.726725405314937e-05,
+      "target_mean": 0.0
+    },
+    "stage_seconds": {
+      "collection": 97.63352065504296,
+      "critic_targets": 26.416312949964777,
+      "critic_updates": 23.650634995952714,
+      "actor_updates": 1.36379967443645e-05,
+      "snapshot_io": 7.844729173986707,
+      "startup_before_snapshots": 65.08754652598873
+    }
+  }
+}

@@ -1,0 +1,8 @@
+......................................................                   [100%]
+=============================== warnings summary ===============================
+tests/test_rldt_pipeline.py::test_evaluation_video_does_not_change_policy_outcomes
+  /workspace/upenn/RL-VLA/.cache/python/cpython-3.11.13-linux-x86_64-gnu/lib/python3.11/subprocess.py:1885: RuntimeWarning: os.fork() was called. os.fork() is incompatible with multithreaded code, and JAX is multithreaded, so this will likely lead to a deadlock.
+    self.pid = _fork_exec(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+54 passed, 1 warning in 63.79s (0:01:03)

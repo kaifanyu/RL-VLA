@@ -1,0 +1,19 @@
+{
+  "resolved_config_unchanged": true,
+  "resolved_config_sha256": "9325840f30283ed0629b44aa607c5f561acfaf96a4046fb6b5ec7e562ff8a928",
+  "regression_tests": {
+    "passed": 54,
+    "failed": 0,
+    "seconds": 63.79,
+    "exit_code": 0,
+    "log": "/workspace/smrithi/rldt-object0-seed0-launch-20261105/tests.log"
+  },
+  "source_review": [
+    "RLDT optimizer, sampling and environment implementation unchanged",
+    "Five exact command milestones retained; training ends at 16000 acknowledged commands",
+    "50 ordered validation states per checkpoint; initialization eligible; ties earliest",
+    "Selection written before paired 50 selected + 50 prior test episodes",
+    "No retention or K16 supplementary evaluation",
+    "Only RLDT receives method-specific readiness; DICE and three-method queue remain blocked"
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "training": {
+    "iterations": 3,
+    "decisions": 68,
+    "primitive_steps": 335,
+    "episodes": 1,
+    "successes": 1,
+    "actor_updates": 4,
+    "critic_updates": 192,
+    "elapsed_seconds": 500.37529464002,
+    "wall_elapsed_seconds": 500.3752958380501,
+    "checkpoint_validation_seconds": 0.0,
+    "checkpoint": "/workspace/smrithi/object0-launch-readiness-20261105/rldt_runtime_v2/training/final",
+    "stage_seconds": {
+      "collection": 183.14745674998267,
+      "critic_targets": 31.74330862297211,
+      "critic_updates": 40.216867051960435,
+      "actor_updates": 154.30657068407163,
+      "snapshot_io": 21.608994310954586,
+      "startup_before_snapshots": 81.0189745289972
+    }
+  },
+  "learner_optimizer_rng_restore": "bitwise stable after restore/re-restore",
+  "replay_rows": 68,
+  "pending": {
+    "episode_steps": 191,
+    "episode_return": 0.0
+  },
+  "simulator_continuation": false,
+  "jax_memory_stats": {
+    "num_allocs": 33892,
+    "bytes_in_use": 14880980736,
+    "peak_bytes_in_use": 21806903808,
+    "largest_alloc_size": 2415919104,
+    "bytes_limit": 37435445240,
+    "bytes_reserved": 0,
+    "peak_bytes_reserved": 0,
+    "largest_free_block_bytes": 0,
+    "pool_bytes": 34374418432,
+    "peak_pool_bytes": 34374418432
+  },
+  "child_max_rss_gib": 20.99761199951172,
+  "method": "rldt",
+  "scope": "bounded diagnostic with production algorithm shapes and unchanged280-command task horizon; budgets/milestones shortened for verification only",
+  "resolved_diagnostic_config": {
+    "algorithm": "rldt",
+    "policy": {
+      "kind": "pi05",
+      "checkpoint": "/workspace/upenn/RL-VLA/checkpoints/openpi/pi05_libero",
+      "model_config": "pi05_libero",
+      "projection_only": false
+    },
+    "env": {
+      "kind": "external",
+      "factory": "rl_vla.envs.libero_pro:make_env",
+      "python": "/workspace/upenn/RL-VLA/.venv-pro/bin/python",
+      "kwargs": {
+        "protocol": "/workspace/upenn/RL-VLA/runs/vla_trace_objects_20261031/tasks/object_0/protocol.json",
+        "task_key": "object_0",
+        "split": "train"
+      }
+    },
+    "train": {
+      "seed": 0,
+      "iterations": 100,
+      "collect_decisions": 32,
+      "critic_steps": 64,
+      "actor_steps": 4,
+      "critic_batch_size": 64,
+      "actor_batch_size": 1,
+      "critic_trajectories": 2,
+      "replay_capacity": 4096,
+      "save_every": 25,
+      "max_controller_commands": 335,
+      "command_milestones": [
+        0,
+        101,
+        200,
+        335
+      ]
+    },
+    "rldt": {
+      "ode_steps": 10,
+      "execute_steps": 5,
+      "particles": 8,
+      "kappa0": 0.001,
+      "kernel_mode": "official",
+      "reference": "moving",
+      "consistency_weight": 0.5,
+      "constraint_weight": 0.2,
+      "actor_lr": 2e-05,
+      "actor_warmup_steps": 32,
+      "max_grad_norm": 1.0,
+      "critic_lr": 0.001,
+      "critic_width": 256,
+      "critic_warmup_iterations": 2,
+      "target_momentum": 0.995,
+      "gamma": 0.999,
+      "td_lambda": 0.5,
+      "bootstrap_samples": 2,
+      "clip_bootstrap": true,
+      "balanced_replay": true,
+      "fresh_fraction": 0.33
+    },
+    "recording": {
+      "enabled": false
+    },
+    "benchmark": {
+      "fresh_uninterrupted": true,
+      "evaluation_k": 1,
+      "test_scope": "reused",
+      "checkpoint_phase": "post-command pre-current-chunk updates",
+      "recording_policy": "primary outcomes and ledger only; optional videos separate"
+    }
+  },
+  "elapsed_seconds": 661.342045064026,
+  "host_peak_rss_gib": 20.99761199951172,
+  "accounting": {
+    "scopes": {
+      "training_settling": {
+        "intended": 20,
+        "completed": 20,
+        "uncertain": 0,
+        "physical_command_lower_bound": 20,
+        "physical_command_upper_bound": 20
+      },
+      "training_controller": {
+        "intended": 335,
+        "completed": 335,
+        "uncertain": 0,
+        "physical_command_lower_bound": 335,
+        "physical_command_upper_bound": 335
+      }
+    },
+    "corrupt_records": [],
+    "bounds_valid": true,
+    "semantics": "backend.step return acknowledgements; unmatched intent is uncertain [0,1]; no simulator-exact continuation"
+  }
+}

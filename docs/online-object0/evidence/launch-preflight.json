@@ -1,0 +1,34 @@
+{
+  "source_commit": "fe0e0bd6280dd7d1bb5e537e4a0e1cd3a854d95d",
+  "source_manifest": "/workspace/smrithi/object0-launch-readiness-20261105/source_manifest.json",
+  "verified_files": 392,
+  "mismatches": [],
+  "gpu_allocation": "User explicitly allocated GPU 0 in this chat",
+  "gpu": 0,
+  "cpu_set": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "host_ram_budget_gib": 48,
+  "storage_growth_budget_gib": 35,
+  "protocol_sha256": "a1e84a70c766c7ad74898b3bec9a12e272b1c326cb94a08cfaf0bc432e1bafa4",
+  "assets": {
+    "bddl": {
+      "path": "/workspace/upenn/RL-VLA/datasets/benchmark_assets/libero_pro/bddl_files/libero_object_swap/pick_up_the_alphabet_soup_and_place_it_in_the_basket.bddl",
+      "sha256": "fb1a2a7457cb6b885366915d470c1837830eb0b2422634483bb34380e33acf95",
+      "git_blob_sha1": "92212c984c44050e7849315ca35e77ab0a1f711c",
+      "repository_path": "bddl_files/libero_object_swap/pick_up_the_alphabet_soup_and_place_it_in_the_basket.bddl"
+    },
+    "states": {
+      "path": "/workspace/upenn/RL-VLA/runs/vla_trace_objects_20261031/tasks/object_0/pro_states.npy",
+      "sha256": "9f4d57d3368a345730395ff5955b4c6c377ed01a3f17c607cbfbaa3523219af2"
+    }
+  },
+  "production_launched": false
+}

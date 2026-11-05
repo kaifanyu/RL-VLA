@@ -1,5 +1,5 @@
 # Local environments and caches
-.venv*/
+.venv*
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -17,8 +17,10 @@ tmp/
 slurm-*.out
 
 # Upstream source is recreated from the dependency lock and patches.
-third_party/*/
-!third_party/patches/
+/third_party/*
+!/third_party/README.md
+!/third_party/dependencies.lock.json
+!/third_party/patches/
 
 # Generated benchmark evidence (normalization inputs remain versioned).
 integrations/multibench/robotwin/smoke/
@@ -47,3 +49,4 @@ runs/**
 # Local caches and the already-applied FlashSAC handoff patch.
 .cache/
 /rl-vla-flashsac.patch
+/team_artifacts/

@@ -1,0 +1,10 @@
+{
+  "max_abs": {
+    "features": 0.0,
+    "noise": 0.0,
+    "actions": 0.05563008785247803
+  },
+  "required_features_atol": 0,
+  "required_noise_atol": 0,
+  "required_actions_atol": 0.0001
+}

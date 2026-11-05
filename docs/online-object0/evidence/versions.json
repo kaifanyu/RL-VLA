@@ -1,0 +1,12 @@
+{
+  "learner": {
+    "jax": "0.5.3",
+    "jaxlib": "0.5.3",
+    "numpy": "1.26.4",
+    "flax": "0.10.2",
+    "optax": "0.2.4"
+  },
+  "openpi_commit": "215abfb217dbac7d5f1273282331b9b1866c0479",
+  "libero_pro_commit": "eafdb809426b13153aa1e4c42d6601844217dfec",
+  "gpu": "index, uuid, name, memory.total [MiB], driver_version\n0, GPU-4d10149c-75d1-b922-a468-29a153dd2761, NVIDIA Graphics Device, 65536 MiB, 610.43.02"
+}

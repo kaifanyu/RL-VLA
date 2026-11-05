@@ -11,6 +11,7 @@ experiments start from `pi05_base`. These use separate baseline measurements.
 | Need | Guide |
 |---|---|
 | Install on GRASP | [Setup](docs/grasp-setup.md) |
+| Run the Object-0 RLDT / FlashSAC / DICE pilot | [Seed-0 pipeline and configurations](docs/online-object0/README.md) |
 | Run Object2 and Object1-hard | [LIBERO campaign](docs/object-campaign-20261028.md) |
 | Run RoboTwin, RoboCasa, and ManiSkill | [Multi-benchmark campaign](docs/multibench-campaign-20261028.md) |
 | Find a launcher | [Scripts](scripts/README.md) |
@@ -56,7 +57,10 @@ benchmark results.
 - Report validation and final test results separately, with successes and episode counts.
 - Preserve source snapshots, configurations, seeds, and compact results. Bulk artifacts stay local.
 
-The current campaigns train for 100 iterations and validate at 25, 50, and 100.
+The earlier campaigns train for 100 iterations and validate at 25, 50, and 100.
+The [Object-0 pilot](docs/online-object0/README.md) instead uses exactly 16,000
+controller commands and checkpoints at 0/4K/8K/12K/16K. RLDT has method-specific
+readiness evidence; DICE and the full three-method queue remain blocked.
 Spatial campaigns and Flow-Noise are paused. Historical protocols retain their
 original schedules.
 

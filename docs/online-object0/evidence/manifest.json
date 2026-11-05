@@ -1,0 +1,17 @@
+{
+  "docs/online-object0/evidence/dice-batching-deltas.json": "7d094766212237605d24b7cca20e1e120681e5e2952bc983e096e524eeca9743",
+  "docs/online-object0/evidence/final-regression-results.txt": "e7af1833982f864a32decd23de61b19157c74629843140fde19d11ad68a874d6",
+  "docs/online-object0/evidence/final-regression-status.json": "3ff1f4254b37b828a2a6e359d4ab4e2009cb4573f8d17b19b8a8239288952952",
+  "docs/online-object0/evidence/frozen-parity.json": "23a782dede2ebd73f9b67ef600f010098835239a5e3418ce22e0ec6b6d4b3fec",
+  "docs/online-object0/evidence/launch-confirmed.json": "897f772762d0087c88e479f19fe6dbe59d44dcf65700ae46d8a765aea9e0e1a3",
+  "docs/online-object0/evidence/launch-dry-run.json": "ab64eaf2c93c3b591e751c965d3c11669eb352af4072e2a078935069499f1148",
+  "docs/online-object0/evidence/launch-preflight.json": "8c07382071971ecfcf3d39034607f94bc71554e74c217f5bd1b44dd030e3b210",
+  "docs/online-object0/evidence/launch-regression-results.txt": "b6f49bfd92638751bd42591f4f067b98ff9c93eb081081855796761857c04064",
+  "docs/online-object0/evidence/launch-review.json": "82d78eb605c3759b9be7a3165fcea43c0d516198538fa06cf2b6f15e8fdcee09",
+  "docs/online-object0/evidence/object0-protocol.json": "a1e84a70c766c7ad74898b3bec9a12e272b1c326cb94a08cfaf0bc432e1bafa4",
+  "docs/online-object0/evidence/publication-regression-results.txt": "4a44281a5afd3a8e8151d0c524ce36988059285bd46c98412ea9eab39a132040",
+  "docs/online-object0/evidence/resolved-seed-configs.json": "9726ba4120e97dd6129db8c032c176e7c12888148f97600052fc6466c09c6732",
+  "docs/online-object0/evidence/rldt-runtime.json": "42d5a9ade5d067bc426cb6e1f5d877ce778e4248fa64f54cbc16cc0840a5b888",
+  "docs/online-object0/evidence/validation-smoke.json": "194724ec94f070e56c5b4a85c089cec01b42077dc657d531703e98bc9d5fe8c4",
+  "docs/online-object0/evidence/versions.json": "272d2dd39af10931167ec83f567f4901c0ed649df0092f4ba4ed11a959d94e76"
+}

@@ -1,0 +1,29 @@
+{
+  "exit_code": 0,
+  "episodes": 1,
+  "successes": 0,
+  "controller_commands": 280,
+  "checkpoint_load": "passed",
+  "accounting": {
+    "scopes": {
+      "validation_smoke_settling": {
+        "intended": 10,
+        "completed": 10,
+        "uncertain": 0,
+        "physical_command_lower_bound": 10,
+        "physical_command_upper_bound": 10
+      },
+      "validation_smoke_controller": {
+        "intended": 280,
+        "completed": 280,
+        "uncertain": 0,
+        "physical_command_lower_bound": 280,
+        "physical_command_upper_bound": 280
+      }
+    },
+    "corrupt_records": [],
+    "bounds_valid": true,
+    "semantics": "backend.step return acknowledgements; unmatched intent is uncertain [0,1]; no simulator-exact continuation"
+  },
+  "scope": "Runtime/horizon/snapshot-loading check; not a performance estimate"
+}

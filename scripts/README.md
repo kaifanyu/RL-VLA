@@ -8,6 +8,7 @@ Run commands from the repository root, using the environment in the linked guide
 | LIBERO campaign | `prepare_object_campaign_grasp.py`, `run_object_campaign_grasp.sh` | [Protocol](../docs/object-campaign-20261028.md) |
 | Multi-benchmark campaign | `integrations/multibench/configure.py`, `integrations/multibench/submit.py` | [Protocol](../docs/multibench-campaign-20261028.md) |
 | RLDT | `run_rldt.sh` | [Method](../docs/rldt.md) |
+| Object-0 seed-0 pilot | `launch_online_object0.py`, `launch_online_object0_seed0.py` | [Configuration, launch, and monitoring](../docs/online-object0/README.md) |
 | Flow-SDE | `run_pi_rl.sh`, `run_pi_rl_task_grasp.py` | [Integration](../integrations/README.md) |
 | Analysis | `analyze_rldt.py`, `compare_pro_methods.py`, `plot_training.py` | [Run index](../runs/README.md) |
 | Readiness | `run_pi_rl_readiness_grasp.sh`, `run_pi_rl_smokes_grasp.slurm` | [Controlled comparison](../docs/controlled-pro-experiments.md) |

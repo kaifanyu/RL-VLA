@@ -1,0 +1,1049 @@
+{
+  "rldt": {
+    "0": {
+      "path": "/workspace/upenn/worktrees/online-object0-ready-20261105/configs/online_object0/rldt_seed0.toml",
+      "raw_toml_sha256": "f2d5693640bac378d5a9e3ea3667afd3d0fafabdc41971f7326eb432f3029f86",
+      "resolved_config": {
+        "algorithm": "rldt",
+        "policy": {
+          "kind": "pi05",
+          "checkpoint": "/workspace/upenn/RL-VLA/checkpoints/openpi/pi05_libero",
+          "model_config": "pi05_libero",
+          "projection_only": false
+        },
+        "env": {
+          "kind": "external",
+          "factory": "rl_vla.envs.libero_pro:make_env",
+          "python": "/workspace/upenn/RL-VLA/.venv-pro/bin/python",
+          "kwargs": {
+            "protocol": "/workspace/upenn/RL-VLA/runs/vla_trace_objects_20261031/tasks/object_0/protocol.json",
+            "task_key": "object_0",
+            "split": "train"
+          }
+        },
+        "train": {
+          "seed": 0,
+          "iterations": 100,
+          "collect_decisions": 32,
+          "critic_steps": 64,
+          "actor_steps": 4,
+          "critic_batch_size": 64,
+          "actor_batch_size": 1,
+          "critic_trajectories": 2,
+          "replay_capacity": 4096,
+          "save_every": 25,
+          "max_controller_commands": 16000,
+          "command_milestones": [
+            0,
+            4000,
+            8000,
+            12000,
+            16000
+          ]
+        },
+        "rldt": {
+          "ode_steps": 10,
+          "execute_steps": 5,
+          "particles": 8,
+          "kappa0": 0.001,
+          "kernel_mode": "official",
+          "reference": "moving",
+          "consistency_weight": 0.5,
+          "constraint_weight": 0.2,
+          "actor_lr": 2e-05,
+          "actor_warmup_steps": 32,
+          "max_grad_norm": 1.0,
+          "critic_lr": 0.001,
+          "critic_width": 256,
+          "critic_warmup_iterations": 2,
+          "target_momentum": 0.995,
+          "gamma": 0.999,
+          "td_lambda": 0.5,
+          "bootstrap_samples": 2,
+          "clip_bootstrap": true,
+          "balanced_replay": true,
+          "fresh_fraction": 0.33
+        },
+        "recording": {
+          "enabled": false
+        },
+        "benchmark": {
+          "fresh_uninterrupted": true,
+          "evaluation_k": 1,
+          "test_scope": "reused",
+          "checkpoint_phase": "post-command pre-current-chunk updates",
+          "recording_policy": "primary outcomes and ledger only; optional videos separate"
+        }
+      },
+      "resolved_config_sha256": "9325840f30283ed0629b44aa607c5f561acfaf96a4046fb6b5ec7e562ff8a928",
+      "production_scope": true
+    },
+    "1": {
+      "path": "/workspace/upenn/worktrees/online-object0-ready-20261105/configs/online_object0/rldt_seed1.toml",
+      "raw_toml_sha256": "a68a34a18272ace3e044f88ab26dea594ffbfa94e7f07fc41c26f58a8f7e5f6e",
+      "resolved_config": {
+        "algorithm": "rldt",
+        "policy": {
+          "kind": "pi05",
+          "checkpoint": "/workspace/upenn/RL-VLA/checkpoints/openpi/pi05_libero",
+          "model_config": "pi05_libero",
+          "projection_only": false
+        },
+        "env": {
+          "kind": "external",
+          "factory": "rl_vla.envs.libero_pro:make_env",
+          "python": "/workspace/upenn/RL-VLA/.venv-pro/bin/python",
+          "kwargs": {
+            "protocol": "/workspace/upenn/RL-VLA/runs/vla_trace_objects_20261031/tasks/object_0/protocol.json",
+            "task_key": "object_0",
+            "split": "train"
+          }
+        },
+        "train": {
+          "seed": 1,
+          "iterations": 100,
+          "collect_decisions": 32,
+          "critic_steps": 64,
+          "actor_steps": 4,
+          "critic_batch_size": 64,
+          "actor_batch_size": 1,
+          "critic_trajectories": 2,
+          "replay_capacity": 4096,
+          "save_every": 25,
+          "max_controller_commands": 16000,
+          "command_milestones": [
+            0,
+            4000,
+            8000,
+            12000,
+            16000
+          ]
+        },
+        "rldt": {
+          "ode_steps": 10,
+          "execute_steps": 5,
+          "particles": 8,
+          "kappa0": 0.001,
+          "kernel_mode": "official",
+          "reference": "moving",
+          "consistency_weight": 0.5,
+          "constraint_weight": 0.2,
+          "actor_lr": 2e-05,
+          "actor_warmup_steps": 32,
+          "max_grad_norm": 1.0,
+          "critic_lr": 0.001,
+          "critic_width": 256,
+          "critic_warmup_iterations": 2,
+          "target_momentum": 0.995,
+          "gamma": 0.999,
+          "td_lambda": 0.5,
+          "bootstrap_samples": 2,
+          "clip_bootstrap": true,
+          "balanced_replay": true,
+          "fresh_fraction": 0.33
+        },
+        "recording": {
+          "enabled": false
+        },
+        "benchmark": {
+          "fresh_uninterrupted": true,
+          "evaluation_k": 1,
+          "test_scope": "reused",
+          "checkpoint_phase": "post-command pre-current-chunk updates",
+          "recording_policy": "primary outcomes and ledger only; optional videos separate"
+        }
+      },
+      "resolved_config_sha256": "4455e4f1006a15139cd1c8aee5798947f802f625780e6b91eb32dc49c0b4cdf1",
+      "production_scope": false
+    },
+    "2": {
+      "path": "/workspace/upenn/worktrees/online-object0-ready-20261105/configs/online_object0/rldt_seed2.toml",
+      "raw_toml_sha256": "df69b017d781d2799655f9dcf119efedb15d5776f8edb953fd65fc64d5d24782",
+      "resolved_config": {
+        "algorithm": "rldt",
+        "policy": {
+          "kind": "pi05",
+          "checkpoint": "/workspace/upenn/RL-VLA/checkpoints/openpi/pi05_libero",
+          "model_config": "pi05_libero",
+          "projection_only": false
+        },
+        "env": {
+          "kind": "external",
+          "factory": "rl_vla.envs.libero_pro:make_env",
+          "python": "/workspace/upenn/RL-VLA/.venv-pro/bin/python",
+          "kwargs": {
+            "protocol": "/workspace/upenn/RL-VLA/runs/vla_trace_objects_20261031/tasks/object_0/protocol.json",
+            "task_key": "object_0",
+            "split": "train"
+          }
+        },
+        "train": {
+          "seed": 2,
+          "iterations": 100,
+          "collect_decisions": 32,
+          "critic_steps": 64,
+          "actor_steps": 4,
+          "critic_batch_size": 64,
+          "actor_batch_size": 1,
+          "critic_trajectories": 2,
+          "replay_capacity": 4096,
+          "save_every": 25,
+          "max_controller_commands": 16000,
+          "command_milestones": [
+            0,
+            4000,
+            8000,
+            12000,
+            16000
+          ]
+        },
+        "rldt": {
+          "ode_steps": 10,
+          "execute_steps": 5,
+          "particles": 8,
+          "kappa0": 0.001,
+          "kernel_mode": "official",
+          "reference": "moving",
+          "consistency_weight": 0.5,
+          "constraint_weight": 0.2,
+          "actor_lr": 2e-05,
+          "actor_warmup_steps": 32,
+          "max_grad_norm": 1.0,
+          "critic_lr": 0.001,
+          "critic_width": 256,
+          "critic_warmup_iterations": 2,
+          "target_momentum": 0.995,
+          "gamma": 0.999,
+          "td_lambda": 0.5,
+          "bootstrap_samples": 2,
+          "clip_bootstrap": true,
+          "balanced_replay": true,
+          "fresh_fraction": 0.33
+        },
+        "recording": {
+          "enabled": false
+        },
+        "benchmark": {
+          "fresh_uninterrupted": true,
+          "evaluation_k": 1,
+          "test_scope": "reused",
+          "checkpoint_phase": "post-command pre-current-chunk updates",
+          "recording_policy": "primary outcomes and ledger only; optional videos separate"
+        }
+      },
+      "resolved_config_sha256": "24c812335b52d816d04900c2e5b3bb6ffe37516ab16554afda4a4d922c1157f3",
+      "production_scope": false
+    }
+  },
+  "flashsac": {
+    "0": {
+      "path": "/workspace/upenn/worktrees/online-object0-ready-20261105/configs/online_object0/flashsac_seed0.toml",
+      "raw_toml_sha256": "14291ed85a5b62ad7e2c70915a5ed69b48a1d1d89a465e7d0ce27e413d516ad0",
+      "resolved_config": {
+        "experiment": "flashsac_object_0",
+        "output_dir": "runs/online_object0_explicit_output_required",
+        "task": {
+          "benchmark": "pro",
+          "suite": "libero_object",
+          "category": "Position",
+          "task_id": 0,
+          "expected_case_id": "pro_libero_object_6b0ff024b794ff53",
+          "label": "Object 0",
+          "label_resolution": "user: RLDT object_0 = LIBERO Object task 0 (alphabet soup into basket); PRO Position variant",
+          "frozen_protocol": "",
+          "state_set": "/workspace/upenn/RL-VLA/runs/pro_state_sets/object_0_canonical_oct31"
+        },
+        "split": {
+          "seed": 20261029,
+          "train": 100,
+          "validation": 50,
+          "test": 50,
+          "retention_initial_states": 50,
+          "duplicate_l2_threshold": 1e-06
+        },
+        "simulator": {
+          "pro_python": "/workspace/upenn/RL-VLA/.venv-pro/bin/python",
+          "original_python": ".venv/bin/python",
+          "pro_libero_config": "/workspace/upenn/worktrees/online-object0-ready-20261105/.cache/libero-pro",
+          "original_libero_config": "/workspace/upenn/worktrees/online-object0-ready-20261105/.cache/libero",
+          "max_steps": null,
+          "renderer": "osmesa"
+        },
+        "base": {
+          "checkpoint": "/workspace/upenn/RL-VLA/checkpoints/openpi/pi05_libero",
+          "model_config": "pi05_libero",
+          "action_horizon": 10,
+          "execute_steps": 5,
+          "noise_protocol": "jax-prngkey-split-normal-v1",
+          "backend": "pi05_flow",
+          "ode_steps": 10
+        },
+        "residual": {
+          "scale": [
+            0.1,
+            0.1,
+            0.1,
+            0.05,
+            0.05,
+            0.05,
+            0.0
+          ],
+          "action_low": [
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0
+          ],
+          "action_high": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "use_vlm_features": true,
+          "eval_deterministic": true,
+          "gamma": 0.99
+        },
+        "flashsac": {
+          "actor_num_blocks": 2,
+          "actor_hidden_dim": 128,
+          "critic_num_blocks": 2,
+          "critic_hidden_dim": 256,
+          "critic_num_bins": 101,
+          "normalized_g_max": 5.0,
+          "normalize_reward": true,
+          "learning_rate": 0.0003,
+          "learning_rate_end": 0.00015,
+          "lr_decay_updates": 16000,
+          "tau": 0.01,
+          "actor_update_period": 2,
+          "initial_temperature": 0.01,
+          "target_sigma": 0.05,
+          "initial_log_std": -3.0
+        },
+        "train": {
+          "seed": 0,
+          "device": "auto",
+          "total_env_steps": 16000,
+          "learning_starts": 2000,
+          "batch_size": 256,
+          "updates_per_step": 1,
+          "replay_capacity": 100000,
+          "log_every_steps": 200,
+          "checkpoint_every_steps": 4000,
+          "validate_every_steps": 4000,
+          "validate_at_steps": [
+            4000,
+            8000,
+            12000,
+            16000
+          ],
+          "validate_at_start": true,
+          "validation_states": "all",
+          "save_replay": true,
+          "torch_threads": 2,
+          "max_gpu_memory_gib": 46.0,
+          "max_gpu_temperature_c": 77.0,
+          "max_workspace_gib": 2300.0
+        },
+        "contract": {
+          "name": "libero_pro_object0_three_method_draft_v2",
+          "eval_seed_start": 100000,
+          "train_reset": "seed_plus_episode",
+          "budget": "strict",
+          "retention_env": "source_protocol",
+          "states_sha256": "9f4d57d3368a345730395ff5955b4c6c377ed01a3f17c607cbfbaa3523219af2",
+          "bddl_sha256": "fb1a2a7457cb6b885366915d470c1837830eb0b2422634483bb34380e33acf95",
+          "base_parameter_sha256": "a7b7519f90a435bbe01a8deb8757109a2433229f13e250fd54be894563f93480",
+          "fresh_uninterrupted": true
+        },
+        "record": {
+          "train_every_episodes": 25,
+          "max_train_recordings": 8,
+          "validation_videos": false,
+          "policy_inputs": "npz",
+          "object_poses": true
+        },
+        "algorithm": "flashsac_pro_residual",
+        "config_path": "/workspace/upenn/worktrees/online-object0-ready-20261105/configs/online_object0/flashsac_seed0.toml"
+      },
+      "resolved_config_sha256": "a54b19f50c5700f030c1cd53f9670cc1acece6e712f8f81a890a3efd213256cd",
+      "production_scope": true
+    },
+    "1": {
+      "path": "/workspace/upenn/worktrees/online-object0-ready-20261105/configs/online_object0/flashsac_seed1.toml",
+      "raw_toml_sha256": "1c97016d4ac5682db873d8022ad9151b6f520ff0d218cab68aa073f01024a502",
+      "resolved_config": {
+        "experiment": "flashsac_object_0",
+        "output_dir": "runs/online_object0_explicit_output_required",
+        "task": {
+          "benchmark": "pro",
+          "suite": "libero_object",
+          "category": "Position",
+          "task_id": 0,
+          "expected_case_id": "pro_libero_object_6b0ff024b794ff53",
+          "label": "Object 0",
+          "label_resolution": "user: RLDT object_0 = LIBERO Object task 0 (alphabet soup into basket); PRO Position variant",
+          "frozen_protocol": "",
+          "state_set": "/workspace/upenn/RL-VLA/runs/pro_state_sets/object_0_canonical_oct31"
+        },
+        "split": {
+          "seed": 20261029,
+          "train": 100,
+          "validation": 50,
+          "test": 50,
+          "retention_initial_states": 50,
+          "duplicate_l2_threshold": 1e-06
+        },
+        "simulator": {
+          "pro_python": "/workspace/upenn/RL-VLA/.venv-pro/bin/python",
+          "original_python": ".venv/bin/python",
+          "pro_libero_config": "/workspace/upenn/worktrees/online-object0-ready-20261105/.cache/libero-pro",
+          "original_libero_config": "/workspace/upenn/worktrees/online-object0-ready-20261105/.cache/libero",
+          "max_steps": null,
+          "renderer": "osmesa"
+        },
+        "base": {
+          "checkpoint": "/workspace/upenn/RL-VLA/checkpoints/openpi/pi05_libero",
+          "model_config": "pi05_libero",
+          "action_horizon": 10,
+          "execute_steps": 5,
+          "noise_protocol": "jax-prngkey-split-normal-v1",
+          "backend": "pi05_flow",
+          "ode_steps": 10
+        },
+        "residual": {
+          "scale": [
+            0.1,
+            0.1,
+            0.1,
+            0.05,
+            0.05,
+            0.05,
+            0.0
+          ],
+          "action_low": [
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0
+          ],
+          "action_high": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "use_vlm_features": true,
+          "eval_deterministic": true,
+          "gamma": 0.99
+        },
+        "flashsac": {
+          "actor_num_blocks": 2,
+          "actor_hidden_dim": 128,
+          "critic_num_blocks": 2,
+          "critic_hidden_dim": 256,
+          "critic_num_bins": 101,
+          "normalized_g_max": 5.0,
+          "normalize_reward": true,
+          "learning_rate": 0.0003,
+          "learning_rate_end": 0.00015,
+          "lr_decay_updates": 16000,
+          "tau": 0.01,
+          "actor_update_period": 2,
+          "initial_temperature": 0.01,
+          "target_sigma": 0.05,
+          "initial_log_std": -3.0
+        },
+        "train": {
+          "seed": 1,
+          "device": "auto",
+          "total_env_steps": 16000,
+          "learning_starts": 2000,
+          "batch_size": 256,
+          "updates_per_step": 1,
+          "replay_capacity": 100000,
+          "log_every_steps": 200,
+          "checkpoint_every_steps": 4000,
+          "validate_every_steps": 4000,
+          "validate_at_steps": [
+            4000,
+            8000,
+            12000,
+            16000
+          ],
+          "validate_at_start": true,
+          "validation_states": "all",
+          "save_replay": true,
+          "torch_threads": 2,
+          "max_gpu_memory_gib": 46.0,
+          "max_gpu_temperature_c": 77.0,
+          "max_workspace_gib": 2300.0
+        },
+        "contract": {
+          "name": "libero_pro_object0_three_method_draft_v2",
+          "eval_seed_start": 100000,
+          "train_reset": "seed_plus_episode",
+          "budget": "strict",
+          "retention_env": "source_protocol",
+          "states_sha256": "9f4d57d3368a345730395ff5955b4c6c377ed01a3f17c607cbfbaa3523219af2",
+          "bddl_sha256": "fb1a2a7457cb6b885366915d470c1837830eb0b2422634483bb34380e33acf95",
+          "base_parameter_sha256": "a7b7519f90a435bbe01a8deb8757109a2433229f13e250fd54be894563f93480",
+          "fresh_uninterrupted": true
+        },
+        "record": {
+          "train_every_episodes": 25,
+          "max_train_recordings": 8,
+          "validation_videos": false,
+          "policy_inputs": "npz",
+          "object_poses": true
+        },
+        "algorithm": "flashsac_pro_residual",
+        "config_path": "/workspace/upenn/worktrees/online-object0-ready-20261105/configs/online_object0/flashsac_seed1.toml"
+      },
+      "resolved_config_sha256": "4fbbb169ec8e7c5d14b0cad9868538c85ed3c8b47e7b12455e7f1c092d46b2fa",
+      "production_scope": false
+    },
+    "2": {
+      "path": "/workspace/upenn/worktrees/online-object0-ready-20261105/configs/online_object0/flashsac_seed2.toml",
+      "raw_toml_sha256": "883ec728c07745a4da0578ffa4f31ebfb2afedfdb9e6777ef517533519bb66ae",
+      "resolved_config": {
+        "experiment": "flashsac_object_0",
+        "output_dir": "runs/online_object0_explicit_output_required",
+        "task": {
+          "benchmark": "pro",
+          "suite": "libero_object",
+          "category": "Position",
+          "task_id": 0,
+          "expected_case_id": "pro_libero_object_6b0ff024b794ff53",
+          "label": "Object 0",
+          "label_resolution": "user: RLDT object_0 = LIBERO Object task 0 (alphabet soup into basket); PRO Position variant",
+          "frozen_protocol": "",
+          "state_set": "/workspace/upenn/RL-VLA/runs/pro_state_sets/object_0_canonical_oct31"
+        },
+        "split": {
+          "seed": 20261029,
+          "train": 100,
+          "validation": 50,
+          "test": 50,
+          "retention_initial_states": 50,
+          "duplicate_l2_threshold": 1e-06
+        },
+        "simulator": {
+          "pro_python": "/workspace/upenn/RL-VLA/.venv-pro/bin/python",
+          "original_python": ".venv/bin/python",
+          "pro_libero_config": "/workspace/upenn/worktrees/online-object0-ready-20261105/.cache/libero-pro",
+          "original_libero_config": "/workspace/upenn/worktrees/online-object0-ready-20261105/.cache/libero",
+          "max_steps": null,
+          "renderer": "osmesa"
+        },
+        "base": {
+          "checkpoint": "/workspace/upenn/RL-VLA/checkpoints/openpi/pi05_libero",
+          "model_config": "pi05_libero",
+          "action_horizon": 10,
+          "execute_steps": 5,
+          "noise_protocol": "jax-prngkey-split-normal-v1",
+          "backend": "pi05_flow",
+          "ode_steps": 10
+        },
+        "residual": {
+          "scale": [
+            0.1,
+            0.1,
+            0.1,
+            0.05,
+            0.05,
+            0.05,
+            0.0
+          ],
+          "action_low": [
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0
+          ],
+          "action_high": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "use_vlm_features": true,
+          "eval_deterministic": true,
+          "gamma": 0.99
+        },
+        "flashsac": {
+          "actor_num_blocks": 2,
+          "actor_hidden_dim": 128,
+          "critic_num_blocks": 2,
+          "critic_hidden_dim": 256,
+          "critic_num_bins": 101,
+          "normalized_g_max": 5.0,
+          "normalize_reward": true,
+          "learning_rate": 0.0003,
+          "learning_rate_end": 0.00015,
+          "lr_decay_updates": 16000,
+          "tau": 0.01,
+          "actor_update_period": 2,
+          "initial_temperature": 0.01,
+          "target_sigma": 0.05,
+          "initial_log_std": -3.0
+        },
+        "train": {
+          "seed": 2,
+          "device": "auto",
+          "total_env_steps": 16000,
+          "learning_starts": 2000,
+          "batch_size": 256,
+          "updates_per_step": 1,
+          "replay_capacity": 100000,
+          "log_every_steps": 200,
+          "checkpoint_every_steps": 4000,
+          "validate_every_steps": 4000,
+          "validate_at_steps": [
+            4000,
+            8000,
+            12000,
+            16000
+          ],
+          "validate_at_start": true,
+          "validation_states": "all",
+          "save_replay": true,
+          "torch_threads": 2,
+          "max_gpu_memory_gib": 46.0,
+          "max_gpu_temperature_c": 77.0,
+          "max_workspace_gib": 2300.0
+        },
+        "contract": {
+          "name": "libero_pro_object0_three_method_draft_v2",
+          "eval_seed_start": 100000,
+          "train_reset": "seed_plus_episode",
+          "budget": "strict",
+          "retention_env": "source_protocol",
+          "states_sha256": "9f4d57d3368a345730395ff5955b4c6c377ed01a3f17c607cbfbaa3523219af2",
+          "bddl_sha256": "fb1a2a7457cb6b885366915d470c1837830eb0b2422634483bb34380e33acf95",
+          "base_parameter_sha256": "a7b7519f90a435bbe01a8deb8757109a2433229f13e250fd54be894563f93480",
+          "fresh_uninterrupted": true
+        },
+        "record": {
+          "train_every_episodes": 25,
+          "max_train_recordings": 8,
+          "validation_videos": false,
+          "policy_inputs": "npz",
+          "object_poses": true
+        },
+        "algorithm": "flashsac_pro_residual",
+        "config_path": "/workspace/upenn/worktrees/online-object0-ready-20261105/configs/online_object0/flashsac_seed2.toml"
+      },
+      "resolved_config_sha256": "1b8ab23439a85471d96aff125bc075499576f86ad114cfc33e8df62b683632d7",
+      "production_scope": false
+    }
+  },
+  "dice": {
+    "0": {
+      "path": "/workspace/upenn/worktrees/online-object0-ready-20261105/configs/online_object0/dice_seed0.toml",
+      "raw_toml_sha256": "4012856885191c64a6cda80974fae5b371437d708577d5bff500ed051c027d42",
+      "resolved_config": {
+        "profile": "audit_online_only_ablation_k1",
+        "ablations": [
+          "no_demonstration_replay"
+        ],
+        "algorithm": "dice",
+        "official_code_commit": "98d936e52523878f0172e606ea32403176497100",
+        "reference_recipe": "cfg/robomimic/finetune/can/ft_distill_residual_flow_unet_img.yaml",
+        "paper_version": "2603.10263v2",
+        "policy": {
+          "checkpoint": "/workspace/upenn/RL-VLA/checkpoints/openpi/pi05_libero",
+          "model_config": "pi05_libero",
+          "projection_only": false
+        },
+        "env": {
+          "kind": "external",
+          "factory": "rl_vla.envs.libero_pro:make_env",
+          "python": "/workspace/upenn/RL-VLA/.venv-pro/bin/python",
+          "kwargs": {
+            "protocol": "/workspace/upenn/RL-VLA/runs/vla_trace_objects_20261031/tasks/object_0/protocol.json",
+            "task_key": "object_0",
+            "split": "train"
+          }
+        },
+        "data": {
+          "mode": "online_only_ablation",
+          "path": "",
+          "expert_fraction": 0.7,
+          "expert_fraction_end": 0.1,
+          "expert_fraction_decay_decisions": 160000,
+          "schedule_units": "commands",
+          "fixed_split": true,
+          "provenance": {
+            "task": {
+              "task_key": "object_0",
+              "task_suite": "libero_object",
+              "task_id": 0,
+              "instruction": "pick the alphabet soup and place it in the basket"
+            },
+            "environment": {
+              "adapter": "rl_vla.envs.libero_pro:make_env",
+              "protocol_id": "sha256:a1e84a70c766c7ad74898b3bec9a12e272b1c326cb94a08cfaf0bc432e1bafa4",
+              "protocol_sha256": "a1e84a70c766c7ad74898b3bec9a12e272b1c326cb94a08cfaf0bc432e1bafa4",
+              "protocol_version": 2,
+              "split": "train"
+            },
+            "demonstration": {
+              "source_id": "not-used-online-only-ablation",
+              "source_split": "train"
+            }
+          }
+        },
+        "train": {
+          "seed": 0,
+          "max_steps": 16000,
+          "gradient_steps_per_chunk": 10,
+          "reference_parallel_envs": 4,
+          "milestones": [
+            4000,
+            8000,
+            12000,
+            16000
+          ],
+          "episodes": 1000,
+          "batch_size": 256,
+          "replay_capacity": 2000000,
+          "replay_max_mb": 4096,
+          "updates_per_episode": 4,
+          "save_every": 5,
+          "learner_device": "cuda"
+        },
+        "dice": {
+          "execute_steps": 5,
+          "ode_steps": 10,
+          "particles": 16,
+          "k_train": 16,
+          "k_bootstrap": 16,
+          "k_collection": 16,
+          "selection_samples": 16,
+          "selection_strategy": "max_q_min",
+          "selection_warmup": 16,
+          "filter_warmup": 11,
+          "width": 1024,
+          "activation": "GELU",
+          "layernorm": true,
+          "critic_ensemble_size": 10,
+          "zero_init": true,
+          "filter_enabled": true,
+          "calibration_mode": "candidate",
+          "retain_expert_regularization": false,
+          "disable_expert_actor_q": false,
+          "q_normalization": false,
+          "discount_mode": "chunk",
+          "n_step": 3,
+          "reward_scale": 1.0,
+          "actor_update_freq": 2,
+          "target_update_freq": 2,
+          "delay_clock": "collection",
+          "weight_decay": 1e-05,
+          "lr_scheduler": true,
+          "lr_cycle_steps": 1000,
+          "lr_warmup_steps": 10,
+          "min_lr": 1e-06,
+          "actor_lr": 0.0001,
+          "critic_lr": 0.0001,
+          "gamma": 0.99,
+          "target_tau": 0.01,
+          "bc_weight": 50.0,
+          "underestimation_threshold": -0.5,
+          "max_grad_norm": 1.0,
+          "proposal_microbatch_rows": 16,
+          "prefix_cache_max_mb": 65536
+        },
+        "evaluation": {
+          "k": 1,
+          "noise_protocol": "per_episode_jax"
+        },
+        "benchmark": {
+          "fresh_uninterrupted": true,
+          "evaluation_k": 1,
+          "test_scope": "reused"
+        }
+      },
+      "resolved_config_sha256": "dd2d6c5a0473b3788088ce0a0e4981bf6078a1f5d0aff313a340c92d44d48a40",
+      "production_scope": true
+    },
+    "1": {
+      "path": "/workspace/upenn/worktrees/online-object0-ready-20261105/configs/online_object0/dice_seed1.toml",
+      "raw_toml_sha256": "203c91fd8bfc008555f74bde9f86f07e06fb1e7255ef46d26be7de2090def811",
+      "resolved_config": {
+        "profile": "audit_online_only_ablation_k1",
+        "ablations": [
+          "no_demonstration_replay"
+        ],
+        "algorithm": "dice",
+        "official_code_commit": "98d936e52523878f0172e606ea32403176497100",
+        "reference_recipe": "cfg/robomimic/finetune/can/ft_distill_residual_flow_unet_img.yaml",
+        "paper_version": "2603.10263v2",
+        "policy": {
+          "checkpoint": "/workspace/upenn/RL-VLA/checkpoints/openpi/pi05_libero",
+          "model_config": "pi05_libero",
+          "projection_only": false
+        },
+        "env": {
+          "kind": "external",
+          "factory": "rl_vla.envs.libero_pro:make_env",
+          "python": "/workspace/upenn/RL-VLA/.venv-pro/bin/python",
+          "kwargs": {
+            "protocol": "/workspace/upenn/RL-VLA/runs/vla_trace_objects_20261031/tasks/object_0/protocol.json",
+            "task_key": "object_0",
+            "split": "train"
+          }
+        },
+        "data": {
+          "mode": "online_only_ablation",
+          "path": "",
+          "expert_fraction": 0.7,
+          "expert_fraction_end": 0.1,
+          "expert_fraction_decay_decisions": 160000,
+          "schedule_units": "commands",
+          "fixed_split": true,
+          "provenance": {
+            "task": {
+              "task_key": "object_0",
+              "task_suite": "libero_object",
+              "task_id": 0,
+              "instruction": "pick the alphabet soup and place it in the basket"
+            },
+            "environment": {
+              "adapter": "rl_vla.envs.libero_pro:make_env",
+              "protocol_id": "sha256:a1e84a70c766c7ad74898b3bec9a12e272b1c326cb94a08cfaf0bc432e1bafa4",
+              "protocol_sha256": "a1e84a70c766c7ad74898b3bec9a12e272b1c326cb94a08cfaf0bc432e1bafa4",
+              "protocol_version": 2,
+              "split": "train"
+            },
+            "demonstration": {
+              "source_id": "not-used-online-only-ablation",
+              "source_split": "train"
+            }
+          }
+        },
+        "train": {
+          "seed": 1,
+          "max_steps": 16000,
+          "gradient_steps_per_chunk": 10,
+          "reference_parallel_envs": 4,
+          "milestones": [
+            4000,
+            8000,
+            12000,
+            16000
+          ],
+          "episodes": 1000,
+          "batch_size": 256,
+          "replay_capacity": 2000000,
+          "replay_max_mb": 4096,
+          "updates_per_episode": 4,
+          "save_every": 5,
+          "learner_device": "cuda"
+        },
+        "dice": {
+          "execute_steps": 5,
+          "ode_steps": 10,
+          "particles": 16,
+          "k_train": 16,
+          "k_bootstrap": 16,
+          "k_collection": 16,
+          "selection_samples": 16,
+          "selection_strategy": "max_q_min",
+          "selection_warmup": 16,
+          "filter_warmup": 11,
+          "width": 1024,
+          "activation": "GELU",
+          "layernorm": true,
+          "critic_ensemble_size": 10,
+          "zero_init": true,
+          "filter_enabled": true,
+          "calibration_mode": "candidate",
+          "retain_expert_regularization": false,
+          "disable_expert_actor_q": false,
+          "q_normalization": false,
+          "discount_mode": "chunk",
+          "n_step": 3,
+          "reward_scale": 1.0,
+          "actor_update_freq": 2,
+          "target_update_freq": 2,
+          "delay_clock": "collection",
+          "weight_decay": 1e-05,
+          "lr_scheduler": true,
+          "lr_cycle_steps": 1000,
+          "lr_warmup_steps": 10,
+          "min_lr": 1e-06,
+          "actor_lr": 0.0001,
+          "critic_lr": 0.0001,
+          "gamma": 0.99,
+          "target_tau": 0.01,
+          "bc_weight": 50.0,
+          "underestimation_threshold": -0.5,
+          "max_grad_norm": 1.0,
+          "proposal_microbatch_rows": 16,
+          "prefix_cache_max_mb": 65536
+        },
+        "evaluation": {
+          "k": 1,
+          "noise_protocol": "per_episode_jax"
+        },
+        "benchmark": {
+          "fresh_uninterrupted": true,
+          "evaluation_k": 1,
+          "test_scope": "reused"
+        }
+      },
+      "resolved_config_sha256": "63e6b402dd7af47f4f60e6a34dee115c660e3d77c561a98b76d9b9f2f8f9a989",
+      "production_scope": false
+    },
+    "2": {
+      "path": "/workspace/upenn/worktrees/online-object0-ready-20261105/configs/online_object0/dice_seed2.toml",
+      "raw_toml_sha256": "618e36a9a2784ab25267fcc8e731a558a30cd6608703fce760bc057b2e911873",
+      "resolved_config": {
+        "profile": "audit_online_only_ablation_k1",
+        "ablations": [
+          "no_demonstration_replay"
+        ],
+        "algorithm": "dice",
+        "official_code_commit": "98d936e52523878f0172e606ea32403176497100",
+        "reference_recipe": "cfg/robomimic/finetune/can/ft_distill_residual_flow_unet_img.yaml",
+        "paper_version": "2603.10263v2",
+        "policy": {
+          "checkpoint": "/workspace/upenn/RL-VLA/checkpoints/openpi/pi05_libero",
+          "model_config": "pi05_libero",
+          "projection_only": false
+        },
+        "env": {
+          "kind": "external",
+          "factory": "rl_vla.envs.libero_pro:make_env",
+          "python": "/workspace/upenn/RL-VLA/.venv-pro/bin/python",
+          "kwargs": {
+            "protocol": "/workspace/upenn/RL-VLA/runs/vla_trace_objects_20261031/tasks/object_0/protocol.json",
+            "task_key": "object_0",
+            "split": "train"
+          }
+        },
+        "data": {
+          "mode": "online_only_ablation",
+          "path": "",
+          "expert_fraction": 0.7,
+          "expert_fraction_end": 0.1,
+          "expert_fraction_decay_decisions": 160000,
+          "schedule_units": "commands",
+          "fixed_split": true,
+          "provenance": {
+            "task": {
+              "task_key": "object_0",
+              "task_suite": "libero_object",
+              "task_id": 0,
+              "instruction": "pick the alphabet soup and place it in the basket"
+            },
+            "environment": {
+              "adapter": "rl_vla.envs.libero_pro:make_env",
+              "protocol_id": "sha256:a1e84a70c766c7ad74898b3bec9a12e272b1c326cb94a08cfaf0bc432e1bafa4",
+              "protocol_sha256": "a1e84a70c766c7ad74898b3bec9a12e272b1c326cb94a08cfaf0bc432e1bafa4",
+              "protocol_version": 2,
+              "split": "train"
+            },
+            "demonstration": {
+              "source_id": "not-used-online-only-ablation",
+              "source_split": "train"
+            }
+          }
+        },
+        "train": {
+          "seed": 2,
+          "max_steps": 16000,
+          "gradient_steps_per_chunk": 10,
+          "reference_parallel_envs": 4,
+          "milestones": [
+            4000,
+            8000,
+            12000,
+            16000
+          ],
+          "episodes": 1000,
+          "batch_size": 256,
+          "replay_capacity": 2000000,
+          "replay_max_mb": 4096,
+          "updates_per_episode": 4,
+          "save_every": 5,
+          "learner_device": "cuda"
+        },
+        "dice": {
+          "execute_steps": 5,
+          "ode_steps": 10,
+          "particles": 16,
+          "k_train": 16,
+          "k_bootstrap": 16,
+          "k_collection": 16,
+          "selection_samples": 16,
+          "selection_strategy": "max_q_min",
+          "selection_warmup": 16,
+          "filter_warmup": 11,
+          "width": 1024,
+          "activation": "GELU",
+          "layernorm": true,
+          "critic_ensemble_size": 10,
+          "zero_init": true,
+          "filter_enabled": true,
+          "calibration_mode": "candidate",
+          "retain_expert_regularization": false,
+          "disable_expert_actor_q": false,
+          "q_normalization": false,
+          "discount_mode": "chunk",
+          "n_step": 3,
+          "reward_scale": 1.0,
+          "actor_update_freq": 2,
+          "target_update_freq": 2,
+          "delay_clock": "collection",
+          "weight_decay": 1e-05,
+          "lr_scheduler": true,
+          "lr_cycle_steps": 1000,
+          "lr_warmup_steps": 10,
+          "min_lr": 1e-06,
+          "actor_lr": 0.0001,
+          "critic_lr": 0.0001,
+          "gamma": 0.99,
+          "target_tau": 0.01,
+          "bc_weight": 50.0,
+          "underestimation_threshold": -0.5,
+          "max_grad_norm": 1.0,
+          "proposal_microbatch_rows": 16,
+          "prefix_cache_max_mb": 65536
+        },
+        "evaluation": {
+          "k": 1,
+          "noise_protocol": "per_episode_jax"
+        },
+        "benchmark": {
+          "fresh_uninterrupted": true,
+          "evaluation_k": 1,
+          "test_scope": "reused"
+        }
+      },
+      "resolved_config_sha256": "883e36a1a979176a4e2dac9b4951f25027af71f4004e08d65756309dab37265b",
+      "production_scope": false
+    }
+  }
+}

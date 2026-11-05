@@ -1,0 +1,12 @@
+{
+  "flashsac": {
+    "normalized_max_abs": 0.0,
+    "decoded_max_abs": 0.0,
+    "preprocessing_equal": true
+  },
+  "dice": {
+    "normalized_max_abs": 0.0,
+    "decoded_max_abs": 0.0,
+    "preprocessing_equal": true
+  }
+}
